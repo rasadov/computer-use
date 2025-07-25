@@ -1,5 +1,8 @@
 from fastapi import FastAPI
+from starlette.responses import HTMLResponse
+from starlette.staticfiles import StaticFiles
 from app.config import settings
+from app.api.session import router
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -27,8 +30,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(router, prefix=settings.API_V1_STR)
+
+app.mount("/", StaticFiles(directory="frontend", html=True), name="static")
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
-    

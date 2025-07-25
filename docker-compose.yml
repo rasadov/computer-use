@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: computer_use
+    ports:
+      - "5432:5432"
+  
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+      - "5900:5900"
+      - "6080:6080"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - POSTGRES_SERVER=db
+    depends_on:
+      - db

@@ -1,3 +1,4 @@
+# Use the existing base from the original Dockerfile
 FROM docker.io/ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -86,9 +87,18 @@ ENV PATH="$HOME/.pyenv/shims:$HOME/.pyenv/bin:$PATH"
 RUN python -m pip install --upgrade pip==23.1.2 setuptools==58.0.4 wheel==0.40.0 && \
     python -m pip config set global.disable-pip-version-check true
 
-# only reinstall if requirements.txt changes
+# Install computer use demo requirements first
 COPY --chown=$USERNAME:$USERNAME computer_use_demo/requirements.txt $HOME/computer_use_demo/requirements.txt
 RUN python -m pip install -r $HOME/computer_use_demo/requirements.txt
+
+
+# Install FastAPI requirements
+COPY --chown=$USERNAME:$USERNAME requirements.txt $HOME/requirements.txt
+RUN python -m pip install -r $HOME/requirements.txt
+
+# Copy application files
+COPY --chown=$USERNAME:$USERNAME app/ $HOME/app/
+COPY --chown=$USERNAME:$USERNAME frontend/ $HOME/frontend/
 
 # setup desktop env & app
 COPY --chown=$USERNAME:$USERNAME image/ $HOME
@@ -100,5 +110,8 @@ ARG WIDTH=1024
 ENV DISPLAY_NUM=$DISPLAY_NUM
 ENV HEIGHT=$HEIGHT
 ENV WIDTH=$WIDTH
+
+# Set Python path to include the current directory
+ENV PYTHONPATH=$HOME
 
 ENTRYPOINT [ "./entrypoint.sh" ]

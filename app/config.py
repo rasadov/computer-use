@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     VNC_PORT: int = 6080
     VNC_PASSWORD: Optional[str] = None
 
-    ANTHROPIC_API_KEY: Optional[str] = None
+    ANTHROPIC_API_KEY: str
 
     BACKEND_CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:8000"]
 
@@ -82,11 +82,6 @@ class Settings(BaseSettings):
     def DATABASE_URL(self):
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
-    @field_validator("DATABASE_URL")
-    def validate_database_url(cls, v):
-        if not v:
-            return f"postgresql+asyncpg://{cls.POSTGRES_USER}:{cls.POSTGRES_PASSWORD}@{cls.POSTGRES_SERVER}:{cls.POSTGRES_PORT}/{cls.POSTGRES_DB}"
-        return v
 
 settings = Settings(
     POSTGRES_SERVER=os.getenv("POSTGRES_SERVER") or "localhost",
@@ -95,5 +90,5 @@ settings = Settings(
     POSTGRES_DB=os.getenv("POSTGRES_DB") or "computer_use",
     POSTGRES_PORT=os.getenv("POSTGRES_PORT") or "5432",
     VNC_PASSWORD=os.getenv("VNC_PASSWORD"),
-    ANTHROPIC_API_KEY=os.getenv("ANTHROPIC_API_KEY"),
+    ANTHROPIC_API_KEY=os.getenv("ANTHROPIC_API_KEY") or "",
 )

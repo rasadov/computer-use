@@ -536,13 +536,11 @@
                 if (data.sessions && data.sessions.length > 0) {
                     sessionsDiv.innerHTML = data.sessions.map(s => {
                         const isActive = s.id === currentSession;
-                        const messageCount = s.messages ? s.messages.length : 0;
                         return `
                             <div class="session-item p-2 border rounded mb-1 ${isActive ? 'active' : ''}" 
                                  onclick="selectSession('${s.id}')">
                                 <div class="d-flex justify-content-between">
                                     <span>${s.id.slice(0,8)}...</span>
-                                    <small class="text-muted">${messageCount} msgs</small>
                                 </div>
                                 <small class="text-muted">${new Date(s.created_at).toLocaleTimeString()}</small>
                             </div>
@@ -638,6 +636,6 @@ async function selectSession(sessionId) {
         // Initialize
         loadSessions();
         updateStatus('Click "Start New Agent Task" to begin');
-    </script>
+    </script> 
 </body>
 </html>

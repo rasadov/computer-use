@@ -3,10 +3,8 @@ from typing import Dict
 import json
 import asyncio
 from app.models.message import ChatMessage
-from app.repositories.message_repository import MessageRepository
-from app.repositories.session_repository import SessionRepository
 from computer_use_demo.loop import sampling_loop, APIProvider
-from app.dependencies import get_db, get_session_manager
+from app.dependencies import get_session_manager
 from app.config import settings
 from anthropic.types.beta import BetaContentBlockParam, BetaMessageParam, BetaTextBlockParam
 from app.services.session_manager import PostgresSessionManager
@@ -59,17 +57,21 @@ async def send_message(session_id: str, message: dict, session_manager: Postgres
         )
         print(f"User message saved successfully: {saved_message.id}")
         
+        # Get all existing messages for processing
+        db_messages = await session_manager.get_session_messages(session_id)
+        anthropic_messages = [convert_to_anthropic_message(msg) for msg in db_messages]
+        
+        # Start agent processing and handle results
+        print(f"Starting background task to process message...")
+        asyncio.create_task(process_message_and_save(session_id, anthropic_messages, session_manager))
+        
+        return {"status": "processing"}
+        
     except Exception as e:
-        print(f"Error saving user message: {e}")
+        print(f"Error in send_message: {e}")
         import traceback
         traceback.print_exc()
-        return {"error": f"Failed to save message: {str(e)}"}
-    
-    # Start agent processing (this will stream via websocket)
-    print(f"Starting background task to process message...")
-    asyncio.create_task(process_message(session_id))
-    
-    return {"status": "processing"}
+        return {"error": f"Failed to process message: {str(e)}"}
 
 @router.websocket("/sessions/{session_id}/ws")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
@@ -117,39 +119,15 @@ def convert_to_anthropic_message(db_message: ChatMessage) -> BetaMessageParam | 
             "content": db_message.content if isinstance(db_message.content, list) else [db_message.content]
         }
 
-async def process_message(session_id: str):
-    """Process user message with computer use agent"""
-    session_manager: PostgresSessionManager
-    async for db in get_db():
-        session_manager = PostgresSessionManager(
-            session_repository=SessionRepository(db),
-            message_repository=MessageRepository(db)
-        )
-        break
-    
+async def process_message_and_save(session_id: str, anthropic_messages: list, session_manager: PostgresSessionManager):
+    """Process message with AI and save results to database"""
     try:
-        session = await session_manager.get_session(session_id)
-        if session is None:
-            print(f"Session {session_id} not found in database")
-            return
-            
         if session_id not in active_connections:
             print(f"No websocket connection for session {session_id}")
             return
             
         websocket = active_connections[session_id]
-        
-        # Get all messages for this session and convert to Anthropic format
-        print(f"Fetching existing messages for session {session_id}")
-        db_messages = await session_manager.get_session_messages(session_id)
-        print(f"Found {len(db_messages)} existing messages in database")
-        
-        # Store the original count to identify new messages later
-        original_message_count = len(db_messages)
-        
-        anthropic_messages = [convert_to_anthropic_message(msg) for msg in db_messages]
-        
-        print(f"Processing {len(anthropic_messages)} messages for session {session_id}")
+        original_message_count = len(anthropic_messages)
         
         # Send debug info to client
         await send_websocket_message(websocket, "debug", f"Starting processing with {len(anthropic_messages)} messages")
@@ -158,7 +136,7 @@ async def process_message(session_id: str):
             """Handle assistant output"""
             print(f"Output callback received: {content}")
             if hasattr(content, 'model_dump'):
-                content_dict = content.model_dump()
+                content_dict = content.model_dump() # type: ignore
             elif isinstance(content, dict):
                 content_dict = content
             else:
@@ -190,7 +168,7 @@ async def process_message(session_id: str):
             if error:
                 print(f"API Error: {error}")
                 asyncio.create_task(send_websocket_message(
-                    websocket, "api_error", str(error)
+                    websocket, "error", f"API Error: {str(error)}"
                 ))
             else:
                 print(f"API Request: {request.method} {request.url}")
@@ -200,35 +178,40 @@ async def process_message(session_id: str):
         print("Starting sampling loop...")
         await send_websocket_message(websocket, "debug", "Starting sampling loop...")
         
-        updated_messages = await sampling_loop(
-            model="claude-sonnet-4-20250514",
-            provider=APIProvider.ANTHROPIC,
-            system_prompt_suffix="",
-            messages=anthropic_messages,
-            output_callback=output_callback,
-            tool_output_callback=tool_callback,
-            api_response_callback=api_callback,
-            api_key=settings.ANTHROPIC_API_KEY,
-            tool_version="computer_use_20250124"
-        )
+        try:
+            # This is the pure AI processing - no database operations
+            updated_messages = await sampling_loop(
+                model="claude-sonnet-4-20250514",
+                provider=APIProvider.ANTHROPIC,
+                system_prompt_suffix="",
+                messages=anthropic_messages,
+                output_callback=output_callback,
+                tool_output_callback=tool_callback,
+                api_response_callback=api_callback,
+                api_key=settings.ANTHROPIC_API_KEY,
+                tool_version="computer_use_20250124"
+            )
+        except Exception as e:
+            error_msg = f"Sampling loop failed: {str(e)}"
+            print(error_msg)
+            await send_websocket_message(websocket, "error", error_msg)
+            return
         
         await send_websocket_message(websocket, "debug", f"Sampling loop completed with {len(updated_messages)} messages")
         
-        for i, msg in enumerate(updated_messages):
-            print(f"Message {i}: Role={msg.get('role')}, Type={type(msg)}")
-            if hasattr(msg, 'content'):
-                print(f"  Content type: {type(msg.content)}")
-            elif 'content' in msg:
-                print(f"  Content type: {type(msg['content'])}")
-        
+        # Extract only the new messages that were generated
         new_messages = updated_messages[original_message_count:]
         
         if len(new_messages) == 0:
             print("WARNING: No new messages to save!")
-            # This could happen if the sampling loop didn't generate any response
             await send_websocket_message(websocket, "debug", "No new messages generated")
+            await send_websocket_message(websocket, "task_complete", "Task completed - no new messages")
+            return
         
-        # Save new messages to database
+        print(f"AI processing complete. Generated {len(new_messages)} new messages. Now saving to database...")
+        
+        # Now save the results using the same session manager (same DB session as the request)
+        saved_count = 0
         for i, msg in enumerate(new_messages):
             try:
                 print(f"Processing new message {i+1}/{len(new_messages)}: {msg.get('role')}")
@@ -244,6 +227,7 @@ async def process_message(session_id: str):
                     content=content_str
                 )
                 print(f"Successfully saved message: {saved_msg.id}")
+                saved_count += 1
                     
             except Exception as e:
                 print(f"Error saving message {i}: {e}")
@@ -252,16 +236,10 @@ async def process_message(session_id: str):
                 # Continue with other messages even if one fails
                 continue
         
-        # Verify messages were saved
-        print("Verifying messages were saved...")
-        final_messages = await session_manager.get_session_messages(session_id)
-        print(f"Total messages in DB after processing: {len(final_messages)}")
-        for msg in final_messages[-5:]:  # Show last 5 messages
-            content_preview = msg.content[:50] if isinstance(msg.content, str) else str(msg.content)[:50]
-            print(f"  - {msg.role}: {content_preview}...")
+        print(f"Database save complete. Saved {saved_count}/{len(new_messages)} messages.")
         
         # Send completion signal
-        await send_websocket_message(websocket, "task_complete", "Task completed successfully")
+        await send_websocket_message(websocket, "task_complete", f"Task completed successfully. Saved {saved_count} new messages.")
 
     except Exception as e:
         error_msg = f"Error processing message: {str(e)}"

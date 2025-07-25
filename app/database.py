@@ -1,46 +1,41 @@
-from sqlalchemy import create_engine, MetaData, text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from typing import Generator
+from typing import AsyncGenerator
 import logging
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import settings
 
+
 logger = logging.getLogger(__name__)
-
-
-engine = create_engine(
+engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=300,
     echo=settings.DEBUG,
 )
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
+SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-def get_db() -> Generator[Session, None, None]:
-    """Dependency to get database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    except Exception as e:
-        logger.error(f"Database error: {e}")
-        db.rollback()
-        raise
-    finally:
-        db.close()
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with SessionLocal() as db:
+        try:
+            yield db
+        except Exception as e:
+            logger.error(f"Database error: {e}")
+            await db.rollback()
+            raise
 
 
-def check_database_connection() -> bool:
+async def check_database_connection() -> bool:
     """Check if database connection is working."""
     try:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+        async with engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
         return True
     except Exception as e:
         logger.error(f"Database connection failed: {e}")
         return False
-

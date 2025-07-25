@@ -1,5 +1,4 @@
 import asyncio
-from typing import Dict
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
@@ -7,10 +6,9 @@ from app.dependencies import get_session_manager
 from app.services.ai_processing_service import process_message_and_save
 from app.services.session_manager import PostgresSessionManager
 from app.utils.convert import convert_to_anthropic_message
+from app.services.connection_manager import connection_manager
 
 router = APIRouter()
-active_connections: Dict[str, WebSocket] = {}
-
 
 @router.post("/sessions")
 async def create_session(session_manager: PostgresSessionManager = Depends(get_session_manager)):
@@ -20,7 +18,21 @@ async def create_session(session_manager: PostgresSessionManager = Depends(get_s
 @router.get("/sessions")
 async def list_sessions(session_manager: PostgresSessionManager = Depends(get_session_manager)):
     sessions = await session_manager.list_sessions()
-    return {"sessions": [{"id": s.id, "status": s.status, "created_at": s.created_at} for s in sessions]}
+    
+    # Also get active sessions from Redis
+    active_redis_sessions = await connection_manager.get_active_sessions()
+    
+    return {
+        "sessions": [
+            {
+                "id": s.id, 
+                "status": s.status, 
+                "created_at": s.created_at,
+                "is_connected": s.id in active_redis_sessions
+            } 
+            for s in sessions
+        ]
+    }
 
 @router.get("/sessions/{session_id}")
 async def get_session(session_id: str, session_manager: PostgresSessionManager = Depends(get_session_manager)):
@@ -29,10 +41,13 @@ async def get_session(session_id: str, session_manager: PostgresSessionManager =
         return {"error": "Session not found"}
     
     messages = await session_manager.get_session_messages(session_id)
+    is_connected = await connection_manager.is_session_active(session_id)
+    
     return {
         "id": session.id,
         "status": session.status,
         "created_at": session.created_at,
+        "is_connected": is_connected,
         "messages": [{"role": m.role, "content": m.content} for m in messages]
     }
 
@@ -44,6 +59,10 @@ async def send_message(session_id: str, message: dict, session_manager: Postgres
     if session is None:
         print(f"Session {session_id} not found")
         return {"error": "Session not found"}
+    
+    # Check if session is connected
+    if not await connection_manager.is_session_active(session_id):
+        return {"error": "Session not connected"}
     
     try:
         print(f"Adding user message to database...")
@@ -58,7 +77,7 @@ async def send_message(session_id: str, message: dict, session_manager: Postgres
         anthropic_messages = [convert_to_anthropic_message(msg) for msg in db_messages]
         
         print(f"Starting background task to process message...")
-        asyncio.create_task(process_message_and_save(session_id, active_connections, anthropic_messages, session_manager))
+        asyncio.create_task(process_message_and_save(session_id, connection_manager, anthropic_messages, session_manager))
         
         return {"status": "processing"}
         
@@ -72,11 +91,38 @@ async def send_message(session_id: str, message: dict, session_manager: Postgres
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """WebSocket endpoint for real-time updates from the agent"""
     await websocket.accept()
-    active_connections[session_id] = websocket
+    await connection_manager.add_connection(session_id, websocket)
     
     try:
+        # Send connection confirmation
+        await connection_manager.send_to_session(
+            session_id, 
+            "connection_established", 
+            f"Connected to session {session_id}"
+        )
+        
         while True:
+            # Keep connection alive
             await websocket.receive_text()
+            
     except WebSocketDisconnect:
-        if session_id in active_connections:
-            del active_connections[session_id]
+        await connection_manager.remove_connection(session_id)
+    except Exception as e:
+        print(f"WebSocket error for session {session_id}: {e}")
+        await connection_manager.remove_connection(session_id)
+
+# Optional: Health check endpoint for Redis connections
+@router.get("/sessions/health/redis")
+async def redis_health():
+    try:
+        active_sessions = await connection_manager.get_active_sessions()
+        return {
+            "status": "healthy",
+            "active_sessions": len(active_sessions),
+            "sessions": list(active_sessions.keys())
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e)
+        }

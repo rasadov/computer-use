@@ -4,6 +4,7 @@ from typing import Dict
 
 from fastapi import WebSocket
 from anthropic.types.beta import BetaContentBlockParam
+from app.services.connection_manager import RedisConnectionManager
 from computer_use_demo.loop import sampling_loop, APIProvider
 
 from app.config import settings
@@ -11,14 +12,14 @@ from app.services.session_manager import PostgresSessionManager
 from app.utils.websocket import send_websocket_message
 
 
-async def process_message_and_save(session_id: str, active_connections: Dict[str, WebSocket], anthropic_messages: list, session_manager: PostgresSessionManager):
+async def process_message_and_save(session_id: str, connection_manager: RedisConnectionManager, anthropic_messages: list, session_manager: PostgresSessionManager):
     """Process message with AI and save results to database"""
     try:
-        if session_id not in active_connections:
+        if not await connection_manager.is_session_active(session_id):
             print(f"No websocket connection for session {session_id}")
             return
             
-        websocket = active_connections[session_id]
+        websocket = await connection_manager.get_connection(session_id)
         original_message_count = len(anthropic_messages)
         
         # Send debug info to client
@@ -138,5 +139,6 @@ async def process_message_and_save(session_id: str, active_connections: Dict[str
         print(error_msg)
         import traceback
         traceback.print_exc()
-        if session_id in active_connections:
-            await send_websocket_message(active_connections[session_id], "error", error_msg)
+        websocket = await connection_manager.get_connection(session_id)
+        if websocket:
+            await send_websocket_message(websocket, "error", error_msg)

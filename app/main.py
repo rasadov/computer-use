@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from starlette.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
 from app.config import settings
-from app.api.session import router
+from app.api.session_router import router as session_router
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -30,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix=settings.API_V1_STR)
+app.include_router(session_router, prefix=settings.API_V1_STR)
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="static")
 

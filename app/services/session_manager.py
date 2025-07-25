@@ -31,14 +31,7 @@ class PostgresSessionManager(SessionManager):
 
     async def get_session_messages(self, session_id: str) -> Sequence[ChatMessage]:
         """Get all messages for a session"""
-        # You'll need to add this method to MessageRepository
-        from sqlalchemy import select
-        result = await self.message_repository.session.execute(
-            select(ChatMessage)
-            .where(ChatMessage.session_id == session_id)
-            .order_by(ChatMessage.timestamp)
-        )
-        return result.scalars().all()
+        return await self.message_repository.get_by_session_id(session_id)
 
     async def add_message(self, session_id: str, role: str, content: str) -> ChatMessage:
         """Add a single message to the session"""

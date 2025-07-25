@@ -215,6 +215,7 @@
                     isProcessing = false;
                     enableInput();
                     updateSessionStatus('active');
+                    document.getElementById('sendBtn').disabled = false;
                     updateStatus('Task completed');
                     break;
                 case 'status':
@@ -225,6 +226,7 @@
                     isProcessing = false;
                     enableInput();
                     updateSessionStatus('active');
+                    document.getElementById('sendBtn').disabled = false;
                     break;
                 case 'heartbeat':
                     break;
@@ -261,9 +263,10 @@
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
-                
                 updateStatus('Processing task...');
+                document.getElementById('sendBtn').disabled = true;
             } catch (error) {
+                document.getElementById('sendBtn').disabled = false;
                 addErrorMessage('Failed to send message: ' + error.message);
                 isProcessing = false;
                 enableInput();

@@ -5,8 +5,9 @@ import asyncio
 from computer_use_demo.loop import sampling_loop, APIProvider
 from app.services.session_manager import session_manager
 from app.config import settings
+from anthropic.types.beta import BetaContentBlockParam, BetaTextBlockParam
 
-router = APIRouter(prefix="/api/v1")
+router = APIRouter()
 active_connections: Dict[str, WebSocket] = {}
 
 
@@ -33,8 +34,11 @@ async def send_message(session_id: str, message: dict):
     if session is None:
         return {"error": "Session not found"}
     
-    # Add user message
-    user_msg = {"role": "user", "content": message["content"]}
+    # Add user message in the correct format
+    user_msg = {
+        "role": "user", 
+        "content": [{"type": "text", "text": message["content"]}]
+    }
     session["messages"].append(user_msg)
     
     # Start agent processing (this will stream via websocket)
@@ -49,10 +53,40 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     
     try:
         while True:
-            await websocket.receive_text()  # Keep connection alive
+            await websocket.receive_text()
     except WebSocketDisconnect:
         if session_id in active_connections:
             del active_connections[session_id]
+
+def convert_message_to_dict(message):
+    """Convert anthropic message objects to serializable dictionaries"""
+    if hasattr(message, '__dict__'):
+        # This is an anthropic object, convert it
+        result = {}
+        for key, value in message.__dict__.items():
+            if key.startswith('_'):
+                continue
+            if hasattr(value, '__dict__'):
+                result[key] = convert_message_to_dict(value)
+            elif isinstance(value, list):
+                result[key] = [convert_message_to_dict(item) if hasattr(item, '__dict__') else item for item in value]
+            else:
+                result[key] = value
+        return result
+    elif isinstance(message, dict):
+        return message
+    else:
+        return str(message)
+
+async def send_websocket_message(websocket: WebSocket, message_type: str, content):
+    """Safely send a message via websocket"""
+    try:
+        await websocket.send_text(json.dumps({
+            "type": message_type,
+            "content": content
+        }))
+    except Exception as e:
+        print(f"Error sending websocket message: {e}")
 
 async def process_message(session_id: str, user_input: str):
     """Process user message with computer use agent"""
@@ -62,24 +96,42 @@ async def process_message(session_id: str, user_input: str):
     
     websocket = active_connections[session_id]
     
-    def output_callback(content):
-        asyncio.create_task(websocket.send_text(json.dumps({
-            "type": "assistant_message",
-            "content": content
-        })))
+    def output_callback(content: BetaContentBlockParam):
+        """Handle assistant output"""
+        if isinstance(content, dict):
+            content_dict = content
+        else:
+            content_dict = convert_message_to_dict(content)
+        
+        asyncio.create_task(send_websocket_message(
+            websocket, "assistant_message", content_dict
+        ))
     
     def tool_callback(result, tool_id):
-        asyncio.create_task(websocket.send_text(json.dumps({
-            "type": "tool_result", 
-            "tool_id": tool_id,
-            "result": str(result)
-        })))
+        """Handle tool results"""
+        # Convert ToolResult to dict
+        result_dict = {}
+        if hasattr(result, 'output') and result.output:
+            result_dict['output'] = result.output
+        if hasattr(result, 'error') and result.error:
+            result_dict['error'] = result.error
+        if hasattr(result, 'base64_image') and result.base64_image:
+            result_dict['base64_image'] = result.base64_image
+        if hasattr(result, 'system') and result.system:
+            result_dict['system'] = result.system
+            
+        asyncio.create_task(send_websocket_message(
+            websocket, "tool_result", json.dumps(result_dict)
+        ))
     
     def api_callback(request, response, error):
-        pass
+        """We will add this as http logs to chat later"""
+        if error:
+            print(f"API Error: {error}")
     
     try:
-        messages = await sampling_loop(
+        # Run the sampling loop
+        updated_messages = await sampling_loop(
             model="claude-sonnet-4-20250514",
             provider=APIProvider.ANTHROPIC,
             system_prompt_suffix="",
@@ -91,12 +143,18 @@ async def process_message(session_id: str, user_input: str):
             tool_version="computer_use_20250124"
         )
         
-        messages_dicts = [dict(m.__dict__) for m in messages]
+        # Convert all messages to serializable format
+        serializable_messages = []
+        for msg in updated_messages:
+            serializable_messages.append(convert_message_to_dict(msg))
 
-        await session_manager.update_session(session_id, messages_dicts)        
+        # Update session with converted messages
+        await session_manager.update_session(session_id, serializable_messages)
+        
+        # Send completion signal
+        await send_websocket_message(websocket, "task_complete", "Task completed successfully")
 
     except Exception as e:
-        await websocket.send_text(json.dumps({
-            "type": "error",
-            "message": str(e)
-        }))
+        error_msg = f"Error processing message: {str(e)}"
+        print(error_msg)
+        await send_websocket_message(websocket, "error", error_msg)

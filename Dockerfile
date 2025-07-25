@@ -91,18 +91,21 @@ RUN python -m pip install --upgrade pip==23.1.2 setuptools==58.0.4 wheel==0.40.0
 COPY --chown=$USERNAME:$USERNAME computer_use_demo/requirements.txt $HOME/computer_use_demo/requirements.txt
 RUN python -m pip install -r $HOME/computer_use_demo/requirements.txt
 
-
 # Install FastAPI requirements
 COPY --chown=$USERNAME:$USERNAME requirements.txt $HOME/requirements.txt
 RUN python -m pip install -r $HOME/requirements.txt
 
-# Copy application files
+# setup desktop env & app FIRST (so we can override entrypoint later)
+COPY --chown=$USERNAME:$USERNAME image/ $HOME
+COPY --chown=$USERNAME:$USERNAME computer_use_demo/ $HOME/computer_use_demo/
+
+# Copy application files AFTER image/ so they don't get overwritten
 COPY --chown=$USERNAME:$USERNAME app/ $HOME/app/
 COPY --chown=$USERNAME:$USERNAME frontend/ $HOME/frontend/
 
-# setup desktop env & app
-COPY --chown=$USERNAME:$USERNAME image/ $HOME
-COPY --chown=$USERNAME:$USERNAME computer_use_demo/ $HOME/computer_use_demo/
+# Copy the CUSTOM entrypoint LAST to override the original one
+COPY --chown=$USERNAME:$USERNAME entrypoint.sh $HOME/entrypoint.sh
+RUN chmod +x $HOME/entrypoint.sh
 
 ARG DISPLAY_NUM=1
 ARG HEIGHT=768

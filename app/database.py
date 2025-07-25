@@ -20,16 +20,6 @@ SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine
 Base = declarative_base()
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with SessionLocal() as db:
-        try:
-            yield db
-        except Exception as e:
-            logger.error(f"Database error: {e}")
-            await db.rollback()
-            raise
-
-
 async def check_database_connection() -> bool:
     """Check if database connection is working."""
     try:

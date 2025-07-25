@@ -5,7 +5,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Computer Use Demo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        .message-container {
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .message-header {
+            padding: 0.5rem 0.75rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .user-header {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .assistant-header {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .tool-header {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .message-content {
+            padding: 0.75rem;
+            background-color: white;
+        }
+        
+        .message-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+        
+        .session-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .session-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .session-item.active {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 0.5rem;
+        }
+        
+        .status-active {
+            background-color: #28a745;
+        }
+        
+        .status-processing {
+            background-color: #ffc107;
+        }
+        
+        .status-inactive {
+            background-color: #6c757d;
+        }
+        
+        pre {
+            background-color: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
 </head>
 <body>
     <div class="container-fluid h-100">
@@ -27,7 +115,7 @@
             <!-- Right Panel - Chat -->
             <div class="col-3 d-flex flex-column p-3" style="height: 100vh;">
                 <h5 class="mb-3">
-                    Chat Session
+                    Chat Session 
                     <span id="sessionStatus" class="status-indicator"></span>
                 </h5>
                 <div id="messages" class="flex-grow-1 overflow-auto border p-3 mb-3"></div>
@@ -41,6 +129,515 @@
         </div>
     </div>
 
-    <script src="scripts.js" type="text/javascript"></script>
+    <script>
+        let currentSession = null;
+        let ws = null;
+        let isProcessing = false;
+
+        // Create new session
+        document.getElementById('newSession').onclick = async () => {
+            try {
+                updateStatus('Creating new session...');
+                const res = await fetch('/api/v1/sessions', { method: 'POST' });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                
+                const data = await res.json();
+                if (!data.session_id) {
+                    throw new Error('No session ID returned');
+                }
+                
+                currentSession = data.session_id;
+                connectWebSocket();
+                loadSessions();
+                clearMessages();
+                enableInput();
+                updateStatus('Session created successfully');
+            } catch (error) {
+                console.error('Error creating session:', error);
+                updateStatus('Error creating session: ' + error.message, 'error');
+            }
+        };
+
+        // Connect WebSocket
+        function connectWebSocket() {
+            if (ws) ws.close();
+            
+            const wsUrl = `ws://localhost:8000/api/v1/sessions/${currentSession}/ws`;
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                updateSessionStatus('active');
+                updateStatus('Connected to session');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            ws.onclose = () => {
+                updateSessionStatus('inactive');
+                updateStatus('Disconnected from session');
+            };
+            
+            ws.onerror = (error) => {
+                updateStatus('WebSocket error', 'error');
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Handle different types of WebSocket messages
+        function handleWebSocketMessage(data) {
+            console.log('WebSocket message:', data);
+            
+            switch (data.type) {
+                case 'connection_established':
+                    updateStatus('Connected to session: ' + data.session_id);
+                    break;
+                case 'task_started':
+                    updateStatus('Task started: ' + data.content);
+                    break;
+                case 'assistant_message':
+                    addAssistantMessage(data.content);
+                    break;
+                case 'tool_result':
+                    addToolResult(data.content, data.tool_id);
+                    break;
+                case 'task_complete':
+                    addMessage('system', data.content, 'bg-success text-white');
+                    isProcessing = false;
+                    enableInput();
+                    updateSessionStatus('active');
+                    updateStatus('Task completed');
+                    break;
+                case 'status':
+                    updateStatus(data.content);
+                    break;
+                case 'error':
+                    addErrorMessage(data.content);
+                    isProcessing = false;
+                    enableInput();
+                    updateSessionStatus('active');
+                    break;
+                case 'heartbeat':
+                    break;
+                default:
+                    console.log('Unknown message type:', data.type, data);
+            }
+        }
+
+        // Send message with proper format
+        document.getElementById('sendBtn').onclick = async () => {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message || !currentSession || isProcessing) return;
+            
+            // Create properly formatted message object
+            const messageContent = {
+                type: "text",
+                text: message
+            };
+            
+            addUserMessage(messageContent);
+            input.value = '';
+            disableInput();
+            isProcessing = true;
+            updateSessionStatus('processing');
+            
+            try {
+                const response = await fetch(`/api/v1/sessions/${currentSession}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: messageContent })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                updateStatus('Processing task...');
+            } catch (error) {
+                addErrorMessage('Failed to send message: ' + error.message);
+                isProcessing = false;
+                enableInput();
+                updateSessionStatus('active');
+            }
+        };
+
+        // Add different types of messages
+        function addUserMessage(content) {
+            let textContent = '';
+            
+            if (typeof content === 'string') {
+                textContent = content;
+            } else if (content && content.type === 'text') {
+                textContent = content.text;
+            } else if (content && content.text) {
+                textContent = content.text;
+            } else if (Array.isArray(content)) {
+                textContent = content.map(item => {
+                    if (typeof item === 'string') return item;
+                    if (item.type === 'text') return item.text;
+                    if (item.text) return item.text;
+                    return JSON.stringify(item);
+                }).join(' ');
+            } else {
+                textContent = JSON.stringify(content);
+            }
+            
+            addMessage('user', textContent, 'user-message');
+        }
+
+        function addAssistantMessage(content) {
+            if (typeof content === 'string') {
+                try {
+                    // Try to parse JSON string
+                    const parsed = JSON.parse(content);
+                    if (Array.isArray(parsed)) {
+                        parsed.forEach(item => processAssistantContent(item));
+                    } else {
+                        processAssistantContent(parsed);
+                    }
+                } catch {
+                    // Not JSON, treat as plain text
+                    addMessage('assistant', content, 'assistant-message');
+                }
+            } else if (Array.isArray(content)) {
+                content.forEach(item => processAssistantContent(item));
+            } else if (content && typeof content === 'object') {
+                processAssistantContent(content);
+            } else {
+                addMessage('assistant', String(content), 'assistant-message');
+            }
+            
+            isProcessing = false;
+            enableInput();
+            updateSessionStatus('active');
+        }
+
+        function processAssistantContent(item) {
+            if (item.type === 'text') {
+                addMessage('assistant', item.text, 'assistant-message');
+            } else if (item.type === 'tool_use') {
+                addToolUse(item);
+            } else if (item.text) {
+                addMessage('assistant', item.text, 'assistant-message');
+            } else {
+                addMessage('assistant', JSON.stringify(item, null, 2), 'assistant-message');
+            }
+        }
+
+        function addToolUse(toolData) {
+            const messages = document.getElementById('messages');
+            const container = document.createElement('div');
+            container.className = 'message-container';
+            
+            const header = document.createElement('div');
+            header.className = 'message-header tool-header';
+            header.textContent = `🔧 Tool Use: ${toolData.name || 'Unknown Tool'}`;
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            const toolInput = JSON.stringify(toolData.input || {}, null, 2);
+            content.innerHTML = `<pre class="mb-0 small">${toolInput}</pre>`;
+            
+            container.appendChild(header);
+            container.appendChild(content);
+            messages.appendChild(container);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addToolResult(result, toolId) {
+            const messages = document.getElementById('messages');
+            const container = document.createElement('div');
+            container.className = 'message-container';
+            
+            const header = document.createElement('div');
+            header.className = 'message-header tool-header';
+            header.textContent = '🔨 Tool Result';
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            let hasImage = false;
+            
+            try {
+                let parsed = result;
+                if (typeof result === 'string') {
+                    try {
+                        parsed = JSON.parse(result);
+                    } catch {
+                        parsed = { output: result };
+                    }
+                }
+                
+                // Check for base64 image
+                if (parsed.base64_image) {
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${parsed.base64_image}`;
+                    img.className = 'message-image';
+                    img.alt = 'Screenshot';
+                    content.appendChild(img);
+                    hasImage = true;
+                } else if (parsed.content && Array.isArray(parsed.content)) {
+                    // Handle tool_result content format
+                    for (const item of parsed.content) {
+                        if (item.type === 'image' && item.source && item.source.data) {
+                            const img = document.createElement('img');
+                            img.src = `data:${item.source.media_type || 'image/png'};base64,${item.source.data}`;
+                            img.className = 'message-image';
+                            img.alt = 'Screenshot';
+                            content.appendChild(img);
+                            hasImage = true;
+                        } else if (item.type === 'text') {
+                            const textDiv = document.createElement('div');
+                            textDiv.textContent = item.text;
+                            content.appendChild(textDiv);
+                        }
+                    }
+                }
+                
+                // Show text content if no image or alongside image
+                if (!hasImage || parsed.output || parsed.error) {
+                    let textContent = '';
+                    if (parsed.output) {
+                        textContent = parsed.output;
+                    } else if (parsed.error) {
+                        textContent = `Error: ${parsed.error}`;
+                        content.classList.add('text-danger');
+                    } else if (typeof parsed === 'string') {
+                        textContent = parsed;
+                    } else if (!hasImage) {
+                        textContent = JSON.stringify(parsed, null, 2);
+                    }
+                    
+                    if (textContent) {
+                        const pre = document.createElement('pre');
+                        pre.className = 'mb-0';
+                        pre.textContent = textContent;
+                        content.appendChild(pre);
+                    }
+                }
+                
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'text-danger';
+                errorDiv.textContent = `Error parsing result: ${error.message}`;
+                content.appendChild(errorDiv);
+            }
+            
+            container.appendChild(header);
+            container.appendChild(content);
+            messages.appendChild(container);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addErrorMessage(message) {
+            addMessage('error', message, 'error-message');
+        }
+
+        function addMessage(type, content, className) {
+            const messages = document.getElementById('messages');
+            const container = document.createElement('div');
+            container.className = 'message-container';
+            
+            const header = document.createElement('div');
+            header.className = 'message-header';
+            
+            let headerText = '';
+            let headerClass = '';
+            
+            switch (type) {
+                case 'user':
+                    headerText = '👤 User';
+                    headerClass = 'user-header';
+                    break;
+                case 'assistant':
+                    headerText = '🤖 Assistant';
+                    headerClass = 'assistant-header';
+                    break;
+                case 'tool':
+                    headerText = '🔧 Tool';
+                    headerClass = 'tool-header';
+                    break;
+                case 'system':
+                    headerText = '⚙️ System';
+                    headerClass = 'tool-header';
+                    break;
+                case 'error':
+                    headerText = '❌ Error';
+                    headerClass = 'bg-danger text-white';
+                    break;
+                default:
+                    headerText = type.charAt(0).toUpperCase() + type.slice(1);
+            }
+            
+            header.textContent = headerText;
+            header.className += ' ' + headerClass;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            if (type === 'error') {
+                contentDiv.innerHTML = `<strong>Error:</strong><br>${content}`;
+                contentDiv.className += ' text-danger';
+            } else {
+                contentDiv.textContent = content;
+            }
+            
+            container.appendChild(header);
+            container.appendChild(contentDiv);
+            messages.appendChild(container);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        function enableInput() {
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('inputStatus').textContent = 'Ready to send message';
+        }
+
+        function disableInput() {
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('inputStatus').textContent = 'Processing...';
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `mt-2 small ${type === 'error' ? 'text-danger' : 'text-muted'}`;
+        }
+
+        function updateSessionStatus(status) {
+            const indicator = document.getElementById('sessionStatus');
+            indicator.className = `status-indicator status-${status}`;
+        }
+
+        // Load sessions
+        async function loadSessions() {
+            try {
+                const res = await fetch('/api/v1/sessions');
+                const data = await res.json();
+                const sessionsDiv = document.getElementById('sessions');
+                
+                if (data.sessions && data.sessions.length > 0) {
+                    sessionsDiv.innerHTML = data.sessions.map(s => {
+                        const isActive = s.id === currentSession;
+                        const messageCount = s.messages ? s.messages.length : 0;
+                        return `
+                            <div class="session-item p-2 border rounded mb-1 ${isActive ? 'active' : ''}" 
+                                 onclick="selectSession('${s.id}')">
+                                <div class="d-flex justify-content-between">
+                                    <span>${s.id.slice(0,8)}...</span>
+                                    <small class="text-muted">${messageCount} msgs</small>
+                                </div>
+                                <small class="text-muted">${new Date(s.created_at).toLocaleTimeString()}</small>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    sessionsDiv.innerHTML = '<div class="text-muted text-center">No sessions yet</div>';
+                }
+            } catch (error) {
+                updateStatus('Error loading sessions: ' + error.message, 'error');
+            }
+        }
+// Select session and load message history
+async function selectSession(sessionId) {
+            if (sessionId === currentSession) return;
+            
+            currentSession = sessionId;
+            connectWebSocket();
+            loadSessions();
+            
+            try {
+                const res = await fetch(`/api/v1/sessions/${sessionId}`);
+                const sessionData = await res.json();
+                
+                clearMessages();
+                
+                if (sessionData.messages && sessionData.messages.length > 0) {
+                    sessionData.messages.forEach(msg => {
+                        // Parse message content from database
+                        let content = msg.content;
+                        if (typeof content === 'string') {
+                            try {
+                                content = JSON.parse(content);
+                            } catch {
+                                // Plain string, wrap it appropriately
+                                if (msg.role === 'user') {
+                                    content = [{ type: 'text', text: content }];
+                                } else {
+                                    content = [{ type: 'text', text: content }];
+                                }
+                            }
+                        }
+                        
+                        // Ensure content is always an array
+                        if (!Array.isArray(content)) {
+                            if (content && content.type) {
+                                content = [content];
+                            } else if (typeof content === 'string') {
+                                content = [{ type: 'text', text: content }];
+                            } else {
+                                content = [{ type: 'text', text: JSON.stringify(content) }];
+                            }
+                        }
+                        
+                        // Process each content item based on type
+                        content.forEach(contentItem => {
+                            if (contentItem.type === 'text') {
+                                if (msg.role === 'user') {
+                                    addUserMessage(contentItem);
+                                } else if (msg.role === 'assistant') {
+                                    addMessage('assistant', contentItem.text, 'assistant-message');
+                                }
+                            } else if (contentItem.type === 'tool_use') {
+                                addToolUse(contentItem);
+                            } else if (contentItem.type === 'tool_result') {
+                                addToolResult(contentItem.content || contentItem, contentItem.tool_use_id);
+                            } else {
+                                // Handle unknown content types
+                                console.log('Unknown content type:', contentItem);
+                                if (msg.role === 'user') {
+                                    addUserMessage(contentItem);
+                                } else {
+                                    addMessage('assistant', JSON.stringify(contentItem), 'assistant-message');
+                                }
+                            }
+                        });
+                    });
+                }
+                
+                enableInput();
+                updateStatus('Session loaded successfully');
+            } catch (error) {
+                updateStatus('Error loading session: ' + error.message, 'error');
+            }
+        }
+        // Enter key support
+        document.getElementById('messageInput').onkeypress = (e) => {
+            if (e.key === 'Enter' && !document.getElementById('sendBtn').disabled) {
+                document.getElementById('sendBtn').click();
+            }
+        };
+
+        // Initialize
+        loadSessions();
+        updateStatus('Click "Start New Agent Task" to begin');
+    </script>
 </body>
 </html>

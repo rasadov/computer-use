@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload, selectinload
 from app.base.repository import BaseRepository
 from app.models.session import SessionDB
 from typing import Optional, Sequence
@@ -26,10 +27,15 @@ class SessionRepository(BaseRepository[SessionDB]):
         await self.session.commit()
         return True
 
+    from sqlalchemy.orm import selectinload
     async def get_by_id(self, id: str) -> Optional[SessionDB]:
-        result = await self.session.execute(select(SessionDB).where(SessionDB.id == id))
+        result = await self.session.execute(
+            select(SessionDB).options(selectinload(SessionDB.messages)).where(SessionDB.id == id)
+        )
         return result.scalar_one_or_none()
 
     async def get_all(self) -> Sequence[SessionDB]:
-        result = await self.session.execute(select(SessionDB))
-        return result.scalars().all()
+        result = await self.session.execute(select(SessionDB).options(
+            joinedload(SessionDB.messages)
+        ))
+        return result.unique().scalars().all()

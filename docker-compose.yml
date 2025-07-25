@@ -1,6 +1,6 @@
-version: '3.8'
 services:
   db:
+    container_name: db
     image: postgres:15
     environment:
       POSTGRES_USER: user
@@ -10,13 +10,13 @@ services:
       - "5432:5432"
   
   app:
+    container_name: app
     build: .
     ports:
       - "8000:8000"
       - "5900:5900"
       - "6080:6080"
-    environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - POSTGRES_SERVER=db
+    env_file:
+      - .env
     depends_on:
       - db

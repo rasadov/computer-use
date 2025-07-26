@@ -6,7 +6,8 @@ TRUNCATED_MESSAGE: str = "<response clipped><NOTE>To save on context only part o
 MAX_RESPONSE_LEN: int = 16000
 
 
-def maybe_truncate(content: str, truncate_after: int | None = MAX_RESPONSE_LEN):
+def maybe_truncate(content: str, truncate_after: int |
+                   None = MAX_RESPONSE_LEN):
     """Truncate content and append a notice if content exceeds the specified length."""
     return (
         content

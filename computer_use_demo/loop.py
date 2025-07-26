@@ -89,7 +89,8 @@ async def sampling_loop(
     Agentic sampling loop for the assistant/tool interaction of computer use.
     """
     tool_group = TOOL_GROUPS_BY_VERSION[tool_version]
-    tool_collection = ToolCollection(*(ToolCls() for ToolCls in tool_group.tools))
+    tool_collection = ToolCollection(
+        *(ToolCls() for ToolCls in tool_group.tools))
     system = BetaTextBlockParam(
         type="text",
         text=f"{SYSTEM_PROMPT}{' ' + system_prompt_suffix if system_prompt_suffix else ''}",
@@ -115,7 +116,8 @@ async def sampling_loop(
             # Because cached reads are 10% of the price, we don't think it's
             # ever sensible to break the cache by truncating images
             only_n_most_recent_images = 0
-            # Use type ignore to bypass TypedDict check until SDK types are updated
+            # Use type ignore to bypass TypedDict check until SDK types are
+            # updated
             system["cache_control"] = {"type": "ephemeral"}  # type: ignore
 
         if only_n_most_recent_images:
@@ -128,8 +130,9 @@ async def sampling_loop(
         if thinking_budget:
             # Ensure we only send the required fields for thinking
             extra_body = {
-                "thinking": {"type": "enabled", "budget_tokens": thinking_budget}
-            }
+                "thinking": {
+                    "type": "enabled",
+                    "budget_tokens": thinking_budget}}
 
         # Call the API
         # we use raw_response to provide debug information to streamlit. Your
@@ -153,8 +156,9 @@ async def sampling_loop(
             return messages
 
         api_response_callback(
-            raw_response.http_response.request, raw_response.http_response, None
-        )
+            raw_response.http_response.request,
+            raw_response.http_response,
+            None)
 
         response = raw_response.parse()
 
@@ -200,16 +204,11 @@ def _maybe_filter_to_n_most_recent_images(
         return messages
 
     tool_result_blocks = cast(
-        list[BetaToolResultBlockParam],
-        [
-            item
-            for message in messages
-            for item in (
-                message["content"] if isinstance(message["content"], list) else []
-            )
-            if isinstance(item, dict) and item.get("type") == "tool_result"
-        ],
-    )
+        list[BetaToolResultBlockParam], [
+            item for message in messages for item in (
+                message["content"] if isinstance(
+                    message["content"], list) else []) if isinstance(
+                item, dict) and item.get("type") == "tool_result"], )
 
     total_images = sum(
         1
@@ -226,7 +225,8 @@ def _maybe_filter_to_n_most_recent_images(
         if isinstance(tool_result.get("content"), list):
             new_content = []
             for content in tool_result.get("content", []):
-                if isinstance(content, dict) and content.get("type") == "image":
+                if isinstance(content, dict) and content.get(
+                        "type") == "image":
                     if images_to_remove > 0:
                         images_to_remove -= 1
                         continue
@@ -249,7 +249,8 @@ def _response_to_params(
                     "thinking": getattr(block, "thinking", None),
                 }
                 if hasattr(block, "signature"):
-                    thinking_block["signature"] = getattr(block, "signature", None)
+                    thinking_block["signature"] = getattr(
+                        block, "signature", None)
                 res.append(cast(BetaContentBlockParam, thinking_block))
         else:
             # Handle tool use blocks normally
@@ -272,7 +273,8 @@ def _inject_prompt_caching(
         ):
             if breakpoints_remaining:
                 breakpoints_remaining -= 1
-                # Use type ignore to bypass TypedDict check until SDK types are updated
+                # Use type ignore to bypass TypedDict check until SDK types are
+                # updated
                 content[-1]["cache_control"] = BetaCacheControlEphemeralParam(  # type: ignore
                     {"type": "ephemeral"}
                 )
@@ -286,11 +288,13 @@ def _make_api_tool_result(
     result: ToolResult, tool_use_id: str
 ) -> BetaToolResultBlockParam:
     """Convert an agent ToolResult to an API ToolResultBlockParam."""
-    tool_result_content: list[BetaTextBlockParam | BetaImageBlockParam] | str = []
+    tool_result_content: list[BetaTextBlockParam |
+                              BetaImageBlockParam] | str = []
     is_error = False
     if result.error:
         is_error = True
-        tool_result_content = _maybe_prepend_system_tool_result(result, result.error)
+        tool_result_content = _maybe_prepend_system_tool_result(
+            result, result.error)
     else:
         if result.output:
             tool_result_content.append(

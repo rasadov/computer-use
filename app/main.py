@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from starlette.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
 from app.config import settings
 from app.api.session_router import router as session_router

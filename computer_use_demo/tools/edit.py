@@ -61,7 +61,8 @@ class EditTool20250124(BaseAnthropicTool):
             return await self.view(_path, view_range)
         elif command == "create":
             if file_text is None:
-                raise ToolError("Parameter `file_text` is required for command: create")
+                raise ToolError(
+                    "Parameter `file_text` is required for command: create")
             self.write_file(_path, file_text)
             self._file_history[_path].append(file_text)
             return ToolResult(output=f"File created successfully at: {_path}")
@@ -77,7 +78,8 @@ class EditTool20250124(BaseAnthropicTool):
                     "Parameter `insert_line` is required for command: insert"
                 )
             if new_str is None:
-                raise ToolError("Parameter `new_str` is required for command: insert")
+                raise ToolError(
+                    "Parameter `new_str` is required for command: insert")
             return self.insert(_path, insert_line, new_str)
         elif command == "undo_edit":
             return self.undo_edit(_path)
@@ -129,7 +131,8 @@ class EditTool20250124(BaseAnthropicTool):
         file_content = self.read_file(path)
         init_line = 1
         if view_range:
-            if len(view_range) != 2 or not all(isinstance(i, int) for i in view_range):
+            if len(view_range) != 2 or not all(isinstance(i, int)
+                                               for i in view_range):
                 raise ToolError(
                     "Invalid `view_range`. It should be a list of two integers."
                 )
@@ -150,13 +153,15 @@ class EditTool20250124(BaseAnthropicTool):
                 )
 
             if final_line == -1:
-                file_content = "\n".join(file_lines[init_line - 1 :])
+                file_content = "\n".join(file_lines[init_line - 1:])
             else:
-                file_content = "\n".join(file_lines[init_line - 1 : final_line])
+                file_content = "\n".join(file_lines[init_line - 1: final_line])
 
         return CLIResult(
-            output=self._make_output(file_content, str(path), init_line=init_line)
-        )
+            output=self._make_output(
+                file_content,
+                str(path),
+                init_line=init_line))
 
     def str_replace(self, path: Path, old_str: str, new_str: str | None):
         """Implement the str_replace command, which replaces old_str with new_str in the file content"""
@@ -195,7 +200,9 @@ class EditTool20250124(BaseAnthropicTool):
         replacement_line = file_content.split(old_str)[0].count("\n")
         start_line = max(0, replacement_line - SNIPPET_LINES)
         end_line = replacement_line + SNIPPET_LINES + new_str.count("\n")
-        snippet = "\n".join(new_file_content.split("\n")[start_line : end_line + 1])
+        snippet = "\n".join(
+            new_file_content.split("\n")[
+                start_line: end_line + 1])
 
         # Prepare the success message
         success_msg = f"The file {path} has been edited. "
@@ -225,9 +232,9 @@ class EditTool20250124(BaseAnthropicTool):
             + file_text_lines[insert_line:]
         )
         snippet_lines = (
-            file_text_lines[max(0, insert_line - SNIPPET_LINES) : insert_line]
+            file_text_lines[max(0, insert_line - SNIPPET_LINES): insert_line]
             + new_str_lines
-            + file_text_lines[insert_line : insert_line + SNIPPET_LINES]
+            + file_text_lines[insert_line: insert_line + SNIPPET_LINES]
         )
 
         new_file_text = "\n".join(new_file_text_lines)
@@ -254,22 +261,23 @@ class EditTool20250124(BaseAnthropicTool):
         self.write_file(path, old_text)
 
         return CLIResult(
-            output=f"Last edit to {path} undone successfully. {self._make_output(old_text, str(path))}"
-        )
+            output=f"Last edit to {path} undone successfully. {self._make_output(old_text, str(path))}")
 
     def read_file(self, path: Path):
         """Read the content of a file from a given path; raise a ToolError if an error occurs."""
         try:
             return path.read_text()
         except Exception as e:
-            raise ToolError(f"Ran into {e} while trying to read {path}") from None
+            raise ToolError(
+                f"Ran into {e} while trying to read {path}") from None
 
     def write_file(self, path: Path, file: str):
         """Write the content of a file to a given path; raise a ToolError if an error occurs."""
         try:
             path.write_text(file)
         except Exception as e:
-            raise ToolError(f"Ran into {e} while trying to write to {path}") from None
+            raise ToolError(
+                f"Ran into {e} while trying to write to {path}") from None
 
     def _make_output(
         self,
@@ -334,7 +342,8 @@ class EditTool20250429(BaseAnthropicTool):
             return await self.view(_path, view_range)
         elif command == "create":
             if file_text is None:
-                raise ToolError("Parameter `file_text` is required for command: create")
+                raise ToolError(
+                    "Parameter `file_text` is required for command: create")
             self.write_file(_path, file_text)
             self._file_history[_path].append(file_text)
             return ToolResult(output=f"File created successfully at: {_path}")
@@ -350,7 +359,8 @@ class EditTool20250429(BaseAnthropicTool):
                     "Parameter `insert_line` is required for command: insert"
                 )
             if new_str is None:
-                raise ToolError("Parameter `new_str` is required for command: insert")
+                raise ToolError(
+                    "Parameter `new_str` is required for command: insert")
             return self.insert(_path, insert_line, new_str)
         # Note: undo_edit command was removed in this version
         raise ToolError(
@@ -401,7 +411,8 @@ class EditTool20250429(BaseAnthropicTool):
         file_content = self.read_file(path)
         init_line = 1
         if view_range:
-            if len(view_range) != 2 or not all(isinstance(i, int) for i in view_range):
+            if len(view_range) != 2 or not all(isinstance(i, int)
+                                               for i in view_range):
                 raise ToolError(
                     "Invalid `view_range`. It should be a list of two integers."
                 )
@@ -422,13 +433,15 @@ class EditTool20250429(BaseAnthropicTool):
                 )
 
             if final_line == -1:
-                file_content = "\n".join(file_lines[init_line - 1 :])
+                file_content = "\n".join(file_lines[init_line - 1:])
             else:
-                file_content = "\n".join(file_lines[init_line - 1 : final_line])
+                file_content = "\n".join(file_lines[init_line - 1: final_line])
 
         return CLIResult(
-            output=self._make_output(file_content, str(path), init_line=init_line)
-        )
+            output=self._make_output(
+                file_content,
+                str(path),
+                init_line=init_line))
 
     def str_replace(self, path: Path, old_str: str, new_str: str | None):
         """Implement the str_replace command, which replaces old_str with new_str in the file content"""
@@ -467,7 +480,9 @@ class EditTool20250429(BaseAnthropicTool):
         replacement_line = file_content.split(old_str)[0].count("\n")
         start_line = max(0, replacement_line - SNIPPET_LINES)
         end_line = replacement_line + SNIPPET_LINES + new_str.count("\n")
-        snippet = "\n".join(new_file_content.split("\n")[start_line : end_line + 1])
+        snippet = "\n".join(
+            new_file_content.split("\n")[
+                start_line: end_line + 1])
 
         # Prepare the success message
         success_msg = f"The file {path} has been edited. "
@@ -497,9 +512,9 @@ class EditTool20250429(BaseAnthropicTool):
             + file_text_lines[insert_line:]
         )
         snippet_lines = (
-            file_text_lines[max(0, insert_line - SNIPPET_LINES) : insert_line]
+            file_text_lines[max(0, insert_line - SNIPPET_LINES): insert_line]
             + new_str_lines
-            + file_text_lines[insert_line : insert_line + SNIPPET_LINES]
+            + file_text_lines[insert_line: insert_line + SNIPPET_LINES]
         )
 
         new_file_text = "\n".join(new_file_text_lines)
@@ -517,21 +532,24 @@ class EditTool20250429(BaseAnthropicTool):
         success_msg += "Review the changes and make sure they are as expected (correct indentation, no duplicate lines, etc). Edit the file again if necessary."
         return CLIResult(output=success_msg)
 
-    # Note: undo_edit method is not implemented in this version as it was removed
+    # Note: undo_edit method is not implemented in this version as it was
+    # removed
 
     def read_file(self, path: Path):
         """Read the content of a file from a given path; raise a ToolError if an error occurs."""
         try:
             return path.read_text()
         except Exception as e:
-            raise ToolError(f"Ran into {e} while trying to read {path}") from None
+            raise ToolError(
+                f"Ran into {e} while trying to read {path}") from None
 
     def write_file(self, path: Path, file: str):
         """Write the content of a file to a given path; raise a ToolError if an error occurs."""
         try:
             path.write_text(file)
         except Exception as e:
-            raise ToolError(f"Ran into {e} while trying to write to {path}") from None
+            raise ToolError(
+                f"Ran into {e} while trying to write to {path}") from None
 
     def _make_output(
         self,
@@ -558,4 +576,5 @@ class EditTool20250429(BaseAnthropicTool):
 
 
 class EditTool20241022(EditTool20250124):
-    api_type: Literal["text_editor_20250429"] = "text_editor_20250429"  # pyright: ignore[reportIncompatibleVariableOverride]
+    # pyright: ignore[reportIncompatibleVariableOverride]
+    api_type: Literal["text_editor_20250429"] = "text_editor_20250429"

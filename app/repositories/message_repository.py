@@ -1,16 +1,19 @@
-from sqlalchemy import select
-from app.base.repository import BaseRepository
-from app.models.message import ChatMessage
 from typing import Optional, Sequence
 
+from sqlalchemy import select
 
-class MessageRepository(BaseRepository[ChatMessage]):    
+from app.base.repository import BaseRepository
+from app.models.message import ChatMessage
+
+
+class MessageRepository(BaseRepository[ChatMessage]):
     async def create(self, model: ChatMessage) -> ChatMessage:
         try:
             self.session.add(model)
             await self.session.commit()
             await self.session.refresh(model)
-            print(f"Created message in DB: {model.id} for session {model.session_id}")
+            print(
+                f"Created message in DB: {model.id} for session {model.session_id}")
             return model
         except Exception as e:
             print(f"Error creating message: {e}")
@@ -41,8 +44,9 @@ class MessageRepository(BaseRepository[ChatMessage]):
     async def get_all(self) -> Sequence[ChatMessage]:
         result = await self.session.execute(select(ChatMessage))
         return result.scalars().all()
-    
-    async def get_by_session_id(self, session_id: str) -> Sequence[ChatMessage]:
+
+    async def get_by_session_id(
+            self, session_id: str) -> Sequence[ChatMessage]:
         """Get all messages for a specific session, ordered by timestamp"""
         result = await self.session.execute(
             select(ChatMessage)

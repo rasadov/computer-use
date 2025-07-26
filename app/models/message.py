@@ -21,11 +21,13 @@ class ChatMessage(CustomBase):
         message_type: str
     """
     __tablename__ = "chat_messages"
-    
-    session_id: Mapped[str] = mapped_column(String, ForeignKey("sessions.id"), index=True)
+
+    session_id: Mapped[str] = mapped_column(
+        String, ForeignKey("sessions.id"), index=True)
     role: Mapped[str] = mapped_column(String)
     content: Mapped[dict] = mapped_column(JSON)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     message_type: Mapped[str] = mapped_column(String, default="text")
 
-    session: Mapped["SessionDB"] = relationship("SessionDB", back_populates="messages")
+    session: Mapped["SessionDB"] = relationship(
+        "SessionDB", back_populates="messages")

@@ -155,7 +155,8 @@ async def test_str_replace_command(edit_tool):
             old_str="Original",
             new_str="New",
         )
-        assert edit_tool._file_history[Path("/test/file.txt")] == ["Original content"]
+        assert edit_tool._file_history[Path(
+            "/test/file.txt")] == ["Original content"]
 
 
 @pytest.mark.asyncio
@@ -173,7 +174,8 @@ async def test_insert_command(edit_tool):
         assert isinstance(result, CLIResult)
         assert result.output
         assert "has been edited" in result.output
-        mock_write_text.assert_called_once_with("Line 1\nLine 2\nNew Line\nLine 3")
+        mock_write_text.assert_called_once_with(
+            "Line 1\nLine 2\nNew Line\nLine 3")
 
     # Test inserting a string at the beginning of the file (line 0)
     with patch("pathlib.Path.exists", return_value=True), patch(
@@ -191,7 +193,8 @@ async def test_insert_command(edit_tool):
         assert isinstance(result, CLIResult)
         assert result.output
         assert "has been edited" in result.output
-        mock_write_text.assert_called_once_with("New First Line\nLine 1\nLine 2")
+        mock_write_text.assert_called_once_with(
+            "New First Line\nLine 1\nLine 2")
 
     # Test inserting a string at the end of the file
     with patch("pathlib.Path.exists", return_value=True), patch(
@@ -209,7 +212,8 @@ async def test_insert_command(edit_tool):
         assert isinstance(result, CLIResult)
         assert result.output
         assert "has been edited" in result.output
-        mock_write_text.assert_called_once_with("Line 1\nLine 2\nNew Last Line")
+        mock_write_text.assert_called_once_with(
+            "Line 1\nLine 2\nNew Last Line")
 
     # Test attempting to insert at an invalid line number
     with patch("pathlib.Path.exists", return_value=True), patch(
@@ -235,7 +239,8 @@ async def test_insert_command(edit_tool):
         await edit_tool(
             command="insert", path="/test/file.txt", insert_line=1, new_str="New Line"
         )
-        assert edit_tool._file_history[Path("/test/file.txt")] == ["Original content"]
+        assert edit_tool._file_history[Path(
+            "/test/file.txt")] == ["Original content"]
 
 
 @pytest.mark.asyncio
@@ -299,7 +304,8 @@ async def test_validate_path(edit_tool):
     with pytest.raises(ToolError, match="not an absolute path"):
         edit_tool.validate_path("view", Path("relative/path.txt"))
 
-    # Test with non-existent paths for non-create commands (should raise an error)
+    # Test with non-existent paths for non-create commands (should raise an
+    # error)
     with patch("pathlib.Path.exists", return_value=False):
         with pytest.raises(ToolError, match="does not exist"):
             edit_tool.validate_path("view", Path("/nonexistent/file.txt"))

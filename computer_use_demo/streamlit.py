@@ -129,7 +129,8 @@ def setup_state():
     if "only_n_most_recent_images" not in st.session_state:
         st.session_state.only_n_most_recent_images = 3
     if "custom_system_prompt" not in st.session_state:
-        st.session_state.custom_system_prompt = load_from_storage("system_prompt") or ""
+        st.session_state.custom_system_prompt = load_from_storage(
+            "system_prompt") or ""
     if "hide_images" not in st.session_state:
         st.session_state.hide_images = False
     if "token_efficient_tools_beta" not in st.session_state:
@@ -161,7 +162,8 @@ def _reset_model_conf():
     st.session_state.has_thinking = model_conf.has_thinking
     st.session_state.output_tokens = model_conf.default_output_tokens
     st.session_state.max_output_tokens = model_conf.max_output_tokens
-    st.session_state.thinking_budget = int(model_conf.default_output_tokens / 2)
+    st.session_state.thinking_budget = int(
+        model_conf.default_output_tokens / 2)
 
 
 async def main():
@@ -199,7 +201,9 @@ async def main():
                 "Anthropic API Key",
                 type="password",
                 key="api_key",
-                on_change=lambda: save_to_storage("api_key", st.session_state.api_key),
+                on_change=lambda: save_to_storage(
+                    "api_key",
+                    st.session_state.api_key),
             )
 
         st.number_input(
@@ -213,22 +217,24 @@ async def main():
             key="custom_system_prompt",
             help="Additional instructions to append to the system prompt. see computer_use_demo/loop.py for the base system prompt.",
             on_change=lambda: save_to_storage(
-                "system_prompt", st.session_state.custom_system_prompt
-            ),
+                "system_prompt",
+                st.session_state.custom_system_prompt),
         )
         st.checkbox("Hide screenshots", key="hide_images")
         st.checkbox(
-            "Enable token-efficient tools beta", key="token_efficient_tools_beta"
-        )
+            "Enable token-efficient tools beta",
+            key="token_efficient_tools_beta")
         versions = get_args(ToolVersion)
         st.radio(
             "Tool Versions",
             key="tool_versions",
             options=versions,
-            index=versions.index(st.session_state.tool_version),
+            index=versions.index(
+                st.session_state.tool_version),
             on_change=lambda: setattr(
-                st.session_state, "tool_version", st.session_state.tool_versions
-            ),
+                st.session_state,
+                "tool_version",
+                st.session_state.tool_versions),
         )
 
         st.number_input("Max Output Tokens", key="output_tokens", step=1)
@@ -255,7 +261,8 @@ async def main():
         if auth_error := validate_auth(
             st.session_state.provider, st.session_state.api_key
         ):
-            st.warning(f"Please resolve the following auth issue:\n\n{auth_error}")
+            st.warning(
+                f"Please resolve the following auth issue:\n\n{auth_error}")
             return
         else:
             st.session_state.auth_validated = True
@@ -274,7 +281,8 @@ async def main():
                 for block in message["content"]:
                     # the tool result we send back to the Anthropic API isn't sufficient to render all details,
                     # so we store the tool use responses
-                    if isinstance(block, dict) and block["type"] == "tool_result":
+                    if isinstance(block,
+                                  dict) and block["type"] == "tool_result":
                         _render_message(
                             Sender.TOOL, st.session_state.tools[block["tool_use_id"]]
                         )
@@ -285,7 +293,8 @@ async def main():
                         )
 
         # render past http exchanges
-        for identity, (request, response) in st.session_state.responses.items():
+        for identity, (request,
+                       response) in st.session_state.responses.items():
             _render_api_response(request, response, identity, http_logs)
 
         # render past chats
@@ -341,14 +350,15 @@ def maybe_add_interruption_blocks():
     if not st.session_state.in_sampling_loop:
         return []
     # If this function is called while we're in the sampling loop, we can assume that the previous sampling loop was interrupted
-    # and we should annotate the conversation with additional context for the model and heal any incomplete tool use calls
+    # and we should annotate the conversation with additional context for the
+    # model and heal any incomplete tool use calls
     result = []
     last_message = st.session_state.messages[-1]
     previous_tool_use_ids = [
-        block["id"] for block in last_message["content"] if block["type"] == "tool_use"
-    ]
+        block["id"] for block in last_message["content"] if block["type"] == "tool_use"]
     for tool_use_id in previous_tool_use_ids:
-        st.session_state.tools[tool_use_id] = ToolResult(error=INTERRUPT_TOOL_ERROR)
+        st.session_state.tools[tool_use_id] = ToolResult(
+            error=INTERRUPT_TOOL_ERROR)
         result.append(
             BetaToolResultBlockParam(
                 tool_use_id=tool_use_id,
@@ -477,7 +487,9 @@ def _render_error(error: Exception):
         lines = "\n".join(traceback.format_exception(error))
         body += f"\n\n```{lines}```"
     save_to_storage(f"error_{datetime.now().timestamp()}.md", body)
-    st.error(f"**{error.__class__.__name__}**\n\n{body}", icon=":material/error:")
+    st.error(
+        f"**{error.__class__.__name__}**\n\n{body}",
+        icon=":material/error:")
 
 
 def _render_message(
@@ -485,7 +497,8 @@ def _render_message(
     message: str | BetaContentBlockParam | ToolResult,
 ):
     """Convert input from the user or output from the agent to a streamlit message."""
-    # streamlit's hotreloading breaks isinstance checks, so we need to check for class names
+    # streamlit's hotreloading breaks isinstance checks, so we need to check
+    # for class names
     is_tool_result = not isinstance(message, str | dict)
     if not message or (
         is_tool_result
@@ -513,7 +526,8 @@ def _render_message(
                 thinking_content = message.get("thinking", "")
                 st.markdown(f"[Thinking]\n\n{thinking_content}")
             elif message["type"] == "tool_use":
-                st.code(f'Tool Use: {message["name"]}\nInput: {message["input"]}')
+                st.code(
+                    f'Tool Use: {message["name"]}\nInput: {message["input"]}')
             else:
                 # only expected return types are text and tool_use
                 raise Exception(f'Unexpected response type {message["type"]}')

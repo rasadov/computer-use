@@ -11,16 +11,14 @@ async def test_loop():
     client.beta.messages.with_raw_response.create.return_value = mock.Mock()
     client.beta.messages.with_raw_response.create.return_value.parse.side_effect = [
         mock.Mock(
-            spec=BetaMessage,
-            content=[
-                TextBlock(type="text", text="Hello"),
-                ToolUseBlock(
-                    type="tool_use", id="1", name="computer", input={"action": "test"}
-                ),
-            ],
-        ),
-        mock.Mock(spec=BetaMessage, content=[TextBlock(type="text", text="Done!")]),
-    ]
+            spec=BetaMessage, content=[
+                TextBlock(
+                    type="text", text="Hello"), ToolUseBlock(
+                    type="tool_use", id="1", name="computer", input={
+                        "action": "test"}), ], ), mock.Mock(
+                            spec=BetaMessage, content=[
+                                TextBlock(
+                                    type="text", text="Done!")]), ]
 
     tool_collection = mock.AsyncMock()
     tool_collection.run.return_value = mock.Mock(
@@ -36,7 +34,8 @@ async def test_loop():
     ), mock.patch(
         "computer_use_demo.loop.ToolCollection", return_value=tool_collection
     ):
-        messages: list[BetaMessageParam] = [{"role": "user", "content": "Test message"}]
+        messages: list[BetaMessageParam] = [
+            {"role": "user", "content": "Test message"}]
         result = await sampling_loop(
             model="test-model",
             provider=APIProvider.ANTHROPIC,

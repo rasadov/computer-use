@@ -11,10 +11,14 @@ if TYPE_CHECKING:
 
 class SessionDB(CustomBase):
     __tablename__ = "sessions"
-    
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    status: Mapped[str] = mapped_column(String, default="active")
-    session_metadata: Mapped[dict] = mapped_column("metadata", JSON, default={})
 
-    messages: Mapped[list["ChatMessage"]] = relationship("ChatMessage", back_populates="session")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now)
+    status: Mapped[str] = mapped_column(String, default="active")
+    session_metadata: Mapped[dict] = mapped_column(
+        "metadata", JSON, default={})
+
+    messages: Mapped[list["ChatMessage"]] = relationship(
+        "ChatMessage", back_populates="session")

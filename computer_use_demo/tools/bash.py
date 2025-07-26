@@ -76,7 +76,8 @@ class _BashSession:
                     await asyncio.sleep(self._output_delay)
                     # if we read directly from stdout/stderr, it will wait forever for
                     # EOF. use the StreamReader buffer directly instead.
-                    output = self._process.stdout._buffer.decode()  # pyright: ignore[reportAttributeAccessIssue]
+                    # pyright: ignore[reportAttributeAccessIssue]
+                    output = self._process.stdout._buffer.decode()
                     if self._sentinel in output:
                         # strip the sentinel and break
                         output = output[: output.index(self._sentinel)]
@@ -90,13 +91,16 @@ class _BashSession:
         if output.endswith("\n"):
             output = output[:-1]
 
-        error = self._process.stderr._buffer.decode()  # pyright: ignore[reportAttributeAccessIssue]
+        # pyright: ignore[reportAttributeAccessIssue]
+        error = self._process.stderr._buffer.decode()
         if error.endswith("\n"):
             error = error[:-1]
 
         # clear the buffers so that the next output can be read correctly
-        self._process.stdout._buffer.clear()  # pyright: ignore[reportAttributeAccessIssue]
-        self._process.stderr._buffer.clear()  # pyright: ignore[reportAttributeAccessIssue]
+        # pyright: ignore[reportAttributeAccessIssue]
+        self._process.stdout._buffer.clear()
+        # pyright: ignore[reportAttributeAccessIssue]
+        self._process.stderr._buffer.clear()
 
         return CLIResult(output=output, error=error)
 
@@ -144,4 +148,5 @@ class BashTool20250124(BaseAnthropicTool):
 
 
 class BashTool20241022(BashTool20250124):
-    api_type: Literal["bash_20250124"] = "bash_20250124"  # pyright: ignore[reportIncompatibleVariableOverride]
+    # pyright: ignore[reportIncompatibleVariableOverride]
+    api_type: Literal["bash_20250124"] = "bash_20250124"

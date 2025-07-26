@@ -1,7 +1,5 @@
-from typing import AsyncGenerator
 import logging
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -16,7 +14,10 @@ engine = create_async_engine(
     pool_recycle=300,
     echo=settings.DEBUG,
 )
-SessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = async_sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine)
 Base = declarative_base()
 
 

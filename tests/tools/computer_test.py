@@ -36,7 +36,8 @@ async def test_computer_tool_type(computer_tool):
         ) as mock_screenshot,
     ):
         mock_shell.return_value = ToolResult(output="Text typed")
-        mock_screenshot.return_value = ToolResult(base64_image="base64_screenshot")
+        mock_screenshot.return_value = ToolResult(
+            base64_image="base64_screenshot")
         result = await computer_tool(action="type", text="Hello, World!")
         assert mock_shell.call_count == 1
         assert "type --delay 12 -- 'Hello, World!'" in mock_shell.call_args[0][0]
@@ -49,7 +50,8 @@ async def test_computer_tool_screenshot(computer_tool):
     with patch.object(
         computer_tool, "screenshot", new_callable=AsyncMock
     ) as mock_screenshot:
-        mock_screenshot.return_value = ToolResult(base64_image="base64_screenshot")
+        mock_screenshot.return_value = ToolResult(
+            base64_image="base64_screenshot")
         result = await computer_tool(action="screenshot")
         mock_screenshot.assert_called_once()
         assert result.base64_image == "base64_screenshot"
@@ -79,7 +81,8 @@ async def test_computer_tool_scaling(computer_tool):
 
 
 @pytest.mark.asyncio
-async def test_computer_tool_scaling_with_different_aspect_ratio(computer_tool):
+async def test_computer_tool_scaling_with_different_aspect_ratio(
+        computer_tool):
     computer_tool._scaling_enabled = True
     computer_tool.width = 1920
     computer_tool.height = 1200  # 16:10 aspect ratio
@@ -96,7 +99,8 @@ async def test_computer_tool_scaling_with_different_aspect_ratio(computer_tool):
 
 
 @pytest.mark.asyncio
-async def test_computer_tool_no_scaling_for_unsupported_resolution(computer_tool):
+async def test_computer_tool_no_scaling_for_unsupported_resolution(
+        computer_tool):
     computer_tool._scaling_enabled = True
     computer_tool.width = 4096
     computer_tool.height = 2160

@@ -9,9 +9,8 @@ from .edit import EditTool20241022, EditTool20250124, EditTool20250429
 ToolVersion = Literal[
     "computer_use_20250124", "computer_use_20241022", "computer_use_20250429"
 ]
-BetaFlag = Literal[
-    "computer-use-2024-10-22", "computer-use-2025-01-24", "computer-use-2025-04-29"
-]
+BetaFlag = Literal["computer-use-2024-10-22",
+                   "computer-use-2025-01-24", "computer-use-2025-04-29"]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -39,4 +38,5 @@ TOOL_GROUPS: list[ToolGroup] = [
     ),
 ]
 
-TOOL_GROUPS_BY_VERSION = {tool_group.version: tool_group for tool_group in TOOL_GROUPS}
+TOOL_GROUPS_BY_VERSION = {
+    tool_group.version: tool_group for tool_group in TOOL_GROUPS}

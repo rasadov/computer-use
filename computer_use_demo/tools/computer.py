@@ -80,7 +80,7 @@ class ComputerToolOptions(TypedDict):
 
 
 def chunks(s: str, chunk_size: int) -> list[str]:
-    return [s[i : i + chunk_size] for i in range(0, len(s), chunk_size)]
+    return [s[i: i + chunk_size] for i in range(0, len(s), chunk_size)]
 
 
 class BaseComputerTool:
@@ -164,9 +164,7 @@ class BaseComputerTool:
                 results: list[ToolResult] = []
                 for chunk in chunks(text, TYPING_GROUP_SIZE):
                     command_parts = [
-                        self.xdotool,
-                        f"type --delay {TYPING_DELAY_MS} -- {shlex.quote(chunk)}",
-                    ]
+                        self.xdotool, f"type --delay {TYPING_DELAY_MS} -- {shlex.quote(chunk)}", ]
                     results.append(
                         await self.shell(" ".join(command_parts), take_screenshot=False)
                     )
@@ -206,18 +204,22 @@ class BaseComputerTool:
                 )
                 return result.replace(output=f"X={x},Y={y}")
             else:
-                command_parts = [self.xdotool, f"click {CLICK_BUTTONS[action]}"]
+                command_parts = [
+                    self.xdotool, f"click {CLICK_BUTTONS[action]}"]
                 return await self.shell(" ".join(command_parts))
 
         raise ToolError(f"Invalid action: {action}")
 
-    def validate_and_get_coordinates(self, coordinate: tuple[int, int] | None = None):
+    def validate_and_get_coordinates(
+            self, coordinate: tuple[int, int] | None = None):
         if not isinstance(coordinate, list) or len(coordinate) != 2:
             raise ToolError(f"{coordinate} must be a tuple of length 2")
         if not all(isinstance(i, int) and i >= 0 for i in coordinate):
-            raise ToolError(f"{coordinate} must be a tuple of non-negative ints")
+            raise ToolError(
+                f"{coordinate} must be a tuple of non-negative ints")
 
-        return self.scale_coordinates(ScalingSource.API, coordinate[0], coordinate[1])
+        return self.scale_coordinates(
+            ScalingSource.API, coordinate[0], coordinate[1])
 
     async def screenshot(self):
         """Take a screenshot of the current screen and return the base64 encoded image."""
@@ -257,7 +259,10 @@ class BaseComputerTool:
             await asyncio.sleep(self._screenshot_delay)
             base64_image = (await self.screenshot()).base64_image
 
-        return ToolResult(output=stdout, error=stderr, base64_image=base64_image)
+        return ToolResult(
+            output=stdout,
+            error=stderr,
+            base64_image=base64_image)
 
     def scale_coordinates(self, source: ScalingSource, x: int, y: int):
         """Scale coordinates to a target maximum resolution."""
@@ -266,7 +271,8 @@ class BaseComputerTool:
         ratio = self.width / self.height
         target_dimension = None
         for dimension in MAX_SCALING_TARGETS.values():
-            # allow some error in the aspect ratio - not ratios are exactly 16:9
+            # allow some error in the aspect ratio - not ratios are exactly
+            # 16:9
             if abs(dimension["width"] / dimension["height"] - ratio) < 0.02:
                 if dimension["width"] < self.width:
                     target_dimension = dimension
@@ -344,7 +350,8 @@ class ComputerTool20250124(BaseComputerTool, BaseAnthropicTool):
             command_parts = [self.xdotool, mouse_move_part]
             if text:
                 command_parts.append(f"keydown {text}")
-            command_parts.append(f"click --repeat {scroll_amount} {scroll_button}")
+            command_parts.append(
+                f"click --repeat {scroll_amount} {scroll_button}")
             if text:
                 command_parts.append(f"keyup {text}")
 

@@ -1,7 +1,9 @@
 from abc import ABC
-from dataclasses import dataclass
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Generic, TypeVar
+from dataclasses import dataclass
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.base.models import CustomBase
 
 

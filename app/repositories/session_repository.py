@@ -1,10 +1,13 @@
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload, selectinload
-from app.base.repository import BaseRepository
-from app.models.session import SessionDB
 from typing import Optional, Sequence
 
-class SessionRepository(BaseRepository[SessionDB]):    
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload, selectinload
+
+from app.base.repository import BaseRepository
+from app.models.session import SessionDB
+
+
+class SessionRepository(BaseRepository[SessionDB]):
     async def create(self, model: SessionDB) -> SessionDB:
         self.session.add(model)
         await self.session.commit()
@@ -28,6 +31,7 @@ class SessionRepository(BaseRepository[SessionDB]):
         return True
 
     from sqlalchemy.orm import selectinload
+
     async def get_by_id(self, id: str) -> Optional[SessionDB]:
         result = await self.session.execute(
             select(SessionDB).options(selectinload(SessionDB.messages)).where(SessionDB.id == id)

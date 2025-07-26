@@ -1,3 +1,4 @@
+Author: Rauf Asadov (github: rasadov)
 # Computer Use Demo Backend
 
 A FastAPI-based backend for the Anthropic Computer Use Demo with persistent session management, real-time streaming, and a modern web interface. This application allows Claude to interact with a virtual desktop environment through a RESTful API with WebSocket support.
@@ -47,6 +48,38 @@ A FastAPI-based backend for the Anthropic Computer Use Demo with persistent sess
    - **API Documentation**: http://localhost:8000/docs
 
 ## Architecture
+
+### System Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant FastAPI
+    participant Database
+    participant Claude AI
+
+    Note over User,Claude AI: Basic Task Flow
+    
+    User->>Frontend: Start new session
+    Frontend->>FastAPI: POST /sessions
+    FastAPI->>Database: Create session
+    Database-->>FastAPI: session_id
+    FastAPI-->>Frontend: session_id
+    
+    User->>Frontend: Send message: "Search weather in Dubai"
+    Frontend->>FastAPI: POST /sessions/{id}/messages
+    FastAPI->>Database: Save user message
+    
+    FastAPI->>Claude AI: Process message with computer tools
+    Claude AI-->>FastAPI: Stream responses + tool results
+    FastAPI-->>Frontend: WebSocket stream (real-time)
+    Frontend-->>User: Display responses + screenshots
+    
+    FastAPI->>Database: Save AI responses
+    
+    Note over User,Claude AI: Session persistence allows users<br/>to view chat history anytime
+```
 
 ### Services
 

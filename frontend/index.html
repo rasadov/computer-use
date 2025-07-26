@@ -414,8 +414,8 @@
                     if (parsed.output) {
                         textContent = parsed.output;
                     } else if (parsed.error) {
-                        textContent = `Error: ${parsed.error}`;
-                        content.classList.add('text-danger');
+                        // textContent = `Error: ${parsed.error}`;
+                        // content.classList.add('text-danger');
                     } else if (typeof parsed === 'string') {
                         textContent = parsed;
                     } else if (!hasImage) {

@@ -1,39 +1,57 @@
 services:
   redis:
-    container_name: redis
+    container_name: computer_use_redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    restart: unless-stopped
 
   db:
-    container_name: db
+    container_name: computer_use_db
     image: postgres:15
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: computer_use
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-computer_use}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-  
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-computer_use}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   app:
-    container_name: app
+    container_name: computer_use_app
     build: .
     ports:
       - "8000:8000"
       - "5900:5900"
       - "6080:6080"
-    env_file:
-      - .env
     environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - POSTGRES_SERVER=db
+      - POSTGRES_USER=${POSTGRES_USER:-user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-computer_use}
+      - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379
+      - DEBUG=${DEBUG:-false}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ~/.anthropic:/home/computeruse/.anthropic
+    restart: unless-stopped
 
 volumes:
   postgres_data:

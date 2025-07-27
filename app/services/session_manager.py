@@ -2,14 +2,18 @@ import uuid
 from typing import Optional, Sequence
 from datetime import datetime
 
-from app.base.session_mager import SessionManager
+from app.base.session_mager import BaseSessionManager
 from app.models.session import SessionDB
 from app.models.message import ChatMessage
 from app.repositories.session_repository import SessionRepository
 from app.repositories.message_repository import MessageRepository
 
 
-class PostgresSessionManager(SessionManager):
+class SessionManager(BaseSessionManager):
+    """
+    Implementation of SessionManager using SQLAlchemy
+    """
+
     def __init__(self, session_repository: SessionRepository,
                  message_repository: MessageRepository):
         self.session_repository = session_repository
@@ -49,15 +53,6 @@ class PostgresSessionManager(SessionManager):
             timestamp=datetime.now()
         )
         return await self.message_repository.create(message)
-
-    async def update_session(self, session_id: str, messages: list) -> None:
-        """Update session metadata (not individual messages)"""
-        session = await self.session_repository.get_by_id(session_id)
-        if session:
-            await self.session_repository.update(session_id, {
-                "updated_at": datetime.now(),
-                "status": "active"
-            })
 
     async def list_sessions(self) -> Sequence[SessionDB]:
         return await self.session_repository.get_all()

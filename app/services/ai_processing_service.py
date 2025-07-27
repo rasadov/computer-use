@@ -2,19 +2,21 @@ import asyncio
 import json
 
 from anthropic.types.beta import BetaContentBlockParam
+from httpx import Request, Response
 from app.services.connection_manager import RedisConnectionManager
 from computer_use_demo.loop import sampling_loop, APIProvider
 
 from app.config import settings
-from app.services.session_manager import PostgresSessionManager
+from app.services.session_manager import SessionManager
 from app.utils.websocket import send_websocket_message
+from computer_use_demo.tools.base import ToolResult
 
 
 async def process_message_and_save(
         session_id: str,
         connection_manager: RedisConnectionManager,
         anthropic_messages: list,
-        session_manager: PostgresSessionManager):
+        session_manager: SessionManager):
     """Process message with AI and save results to database"""
     try:
         if not await connection_manager.is_session_active(session_id):
@@ -30,9 +32,11 @@ async def process_message_and_save(
         # Send debug info to client
         await send_websocket_message(websocket, "debug", f"Starting processing with {len(anthropic_messages)} messages")
 
+        # Callbacks for AI processing
+
         def output_callback(content: BetaContentBlockParam):
             """Handle assistant output"""
-            print(f"Output callback received: {content}")
+            print(f"Output callback received: {content.get('text')}")
             if hasattr(content, 'model_dump'):
                 content_dict = content.model_dump()  # type: ignore
             elif isinstance(content, dict):
@@ -47,9 +51,9 @@ async def process_message_and_save(
                 websocket, "assistant_message", content_dict
             ))
 
-        def tool_callback(result, tool_id):
+        def tool_callback(result: ToolResult, tool_id: str):
             """Handle tool results"""
-            print(f"Tool callback - ID: {tool_id}, Result: {result}")
+            print(f"Tool callback - ID: {tool_id}")
             result_dict = {}
             if hasattr(result, 'output') and result.output:
                 result_dict['output'] = result.output
@@ -67,7 +71,10 @@ async def process_message_and_save(
                 websocket, "tool_result", result_dict
             ))
 
-        def api_callback(request, response, error):
+        def api_callback(
+                request: Request,
+                response: Response | object | None,
+                error: Exception | None):
             """Handle API responses/errors"""
             if error:
                 if not websocket:
@@ -79,26 +86,35 @@ async def process_message_and_save(
             else:
                 print(f"API Request: {request.method} {request.url}")
                 if hasattr(response, 'status_code'):
-                    print(f"API Response: {response.status_code}")
+                    print(f"API Response: {response.status_code}") # type: ignore
 
         print("Starting sampling loop...")
         await send_websocket_message(websocket, "debug", "Starting sampling loop...")
 
-        try:
-            # This is the pure AI processing - no database operations
-            updated_messages = await sampling_loop(
-                model="claude-sonnet-4-20250514",
-                provider=APIProvider.ANTHROPIC,
-                system_prompt_suffix="",
-                messages=anthropic_messages,
-                output_callback=output_callback,
-                tool_output_callback=tool_callback,
-                api_response_callback=api_callback,
-                api_key=settings.ANTHROPIC_API_KEY,
-                tool_version="computer_use_20250124"
-            )
-        except Exception as e:
-            error_msg = f"Sampling loop failed: {str(e)}"
+        max_retries = 3
+        updated_messages = []
+
+        for i in range(max_retries):
+            try:
+                # This is the pure AI processing - no database operations
+                updated_messages = await sampling_loop(
+                    model="claude-sonnet-4-20250514",
+                    provider=APIProvider.ANTHROPIC,
+                    system_prompt_suffix="",
+                    messages=anthropic_messages,
+                    output_callback=output_callback,
+                    tool_output_callback=tool_callback,
+                    api_response_callback=api_callback,
+                    api_key=settings.ANTHROPIC_API_KEY,
+                    tool_version="computer_use_20250124"
+                )
+                break
+            except Exception as e:
+                error_msg = f"Sampling loop failed: {str(e)}"
+                print(error_msg)
+                await send_websocket_message(websocket, "error", error_msg)
+        else:
+            error_msg = "Sampling loop failed after multiple retries"
             print(error_msg)
             await send_websocket_message(websocket, "error", error_msg)
             return

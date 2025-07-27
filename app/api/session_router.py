@@ -1,12 +1,10 @@
 import asyncio
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from pydantic_core.core_schema import model_schema
-from starlette.routing import request_response
 
 from app.dependencies import get_session_manager
 from app.services.ai_processing_service import process_message_and_save
-from app.services.session_manager import PostgresSessionManager
+from app.services.session_manager import SessionManager
 from app.utils.convert import convert_to_anthropic_message
 from app.services.connection_manager import connection_manager
 from app.schemas import session as session_schemas
@@ -15,20 +13,21 @@ router = APIRouter()
 
 
 @router.post("/sessions",
-    response_model=session_schemas.CreateSessionResponse,
-    tags=["Sessions"]
-)
+             response_model=session_schemas.CreateSessionResponse,
+             tags=["Sessions"]
+             )
 async def create_session(
-        session_manager: PostgresSessionManager = Depends(get_session_manager)):
+        session_manager: SessionManager = Depends(get_session_manager)):
     session_id = await session_manager.create_session()
     return session_schemas.CreateSessionResponse(session_id=session_id)
 
 
 @router.get("/sessions",
-    response_model=session_schemas.ListSessionsResponse,
-    tags=["Sessions"]
-)
-async def list_sessions(session_manager: PostgresSessionManager = Depends(get_session_manager)):
+            response_model=session_schemas.ListSessionsResponse,
+            tags=["Sessions"]
+            )
+async def list_sessions(
+        session_manager: SessionManager = Depends(get_session_manager)):
     sessions = await session_manager.list_sessions()
 
     # Also get active sessions from Redis
@@ -48,12 +47,12 @@ async def list_sessions(session_manager: PostgresSessionManager = Depends(get_se
 
 
 @router.get("/sessions/{session_id}",
-    response_model=session_schemas.GetSessionResponse,
-    tags=["Sessions"]
-)
+            response_model=session_schemas.GetSessionResponse,
+            tags=["Sessions"]
+            )
 async def get_session(
         session_id: str,
-        session_manager: PostgresSessionManager = Depends(get_session_manager)):
+        session_manager: SessionManager = Depends(get_session_manager)):
     session = await session_manager.get_session(session_id)
     if session is None:
         return session_schemas.ErrorResponse(error="Session not found")
@@ -77,13 +76,13 @@ async def get_session(
 
 
 @router.post("/sessions/{session_id}/messages",
-    response_model=session_schemas.SendMessageResponse,
-    tags=["Sessions"]
-)
+             response_model=session_schemas.SendMessageResponse,
+             tags=["Sessions"]
+             )
 async def send_message(
         session_id: str,
         message: dict,
-        session_manager: PostgresSessionManager = Depends(get_session_manager)):
+        session_manager: SessionManager = Depends(get_session_manager)):
     print(f"Received message for session {session_id}: {message}")
 
     session = await session_manager.get_session(session_id)
@@ -122,7 +121,8 @@ async def send_message(
         print(f"Error in send_message: {e}")
         import traceback
         traceback.print_exc()
-        return session_schemas.ErrorResponse(error=f"Failed to process message: {str(e)}")
+        return session_schemas.ErrorResponse(
+            error=f"Failed to process message: {str(e)}")
 
 
 @router.websocket("/sessions/{session_id}/ws")
@@ -151,9 +151,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
 
 @router.get("/sessions/health/redis",
-    response_model=session_schemas.RedisHealthResponse,
-    tags=["Sessions"]
-)
+            response_model=session_schemas.RedisHealthResponse,
+            tags=["Sessions"]
+            )
 async def redis_health():
     try:
         active_sessions = await connection_manager.get_active_sessions()

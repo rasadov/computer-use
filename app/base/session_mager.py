@@ -2,15 +2,17 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from anthropic.types.beta import BetaMessageParam
-
 from app.models.session import SessionDB
+from app.models.message import ChatMessage
 from app.repositories.session_repository import SessionRepository
 from app.repositories.message_repository import MessageRepository
 
 
 @dataclass
-class SessionManager(ABC):
+class BaseSessionManager(ABC):
+    """
+    Abstract class for session management
+    """
     session_repository: SessionRepository
     message_repository: MessageRepository
 
@@ -23,10 +25,16 @@ class SessionManager(ABC):
         pass
 
     @abstractmethod
-    async def update_session(
+    async def get_session_messages(
+            self, session_id: str) -> Sequence[ChatMessage]:
+        pass
+
+    @abstractmethod
+    async def add_message(
             self,
             session_id: str,
-            messages: list[BetaMessageParam]) -> None:
+            role: str,
+            content: str) -> ChatMessage:
         pass
 
     @abstractmethod

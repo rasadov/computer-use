@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import SessionLocal
 from app.repositories.message_repository import MessageRepository
 from app.repositories.session_repository import SessionRepository
-from app.services.session_manager import PostgresSessionManager
+from app.services.session_manager import SessionManager
 
 
 logger = getLogger(__name__)
@@ -38,8 +38,8 @@ async def get_session_repository(
 async def get_session_manager(
     messages_repository: MessageRepository = Depends(get_message_repository),
     session_repository: SessionRepository = Depends(get_session_repository),
-) -> PostgresSessionManager:
-    return PostgresSessionManager(
+) -> SessionManager:
+    return SessionManager(
         session_repository,
         messages_repository,
     )

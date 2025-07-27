@@ -9,27 +9,33 @@ class CreateSessionResponse(BaseModel):
 
 
 class SessionInfo(BaseModel):
-    id: str = Field(..., description="Session ID") 
+    id: str = Field(..., description="Session ID")
     status: str = Field(..., description="Session status")
-    created_at: datetime = Field(..., description="When the session was created")
-    is_connected: bool = Field(..., description="Whether the session has an active WebSocket connection")
+    created_at: datetime = Field(...,
+                                 description="When the session was created")
+    is_connected: bool = Field(...,
+                               description="Whether the session has an active WebSocket connection")
 
 
 class ListSessionsResponse(BaseModel):
-    sessions: List[SessionInfo] = Field(..., description="List of all sessions")
+    sessions: List[SessionInfo] = Field(...,
+                                        description="List of all sessions")
 
 
 class MessageInfo(BaseModel):
     role: str = Field(..., description="Message role (user/assistant)")
-    content: dict = Field(..., description="Message content")
+    content: str | dict = Field(..., description="Message content")
 
 
 class GetSessionResponse(BaseModel):
     id: str = Field(..., description="Session ID")
-    status: str = Field(..., description="Session status") 
-    created_at: datetime = Field(..., description="When the session was created")
-    is_connected: bool = Field(..., description="Whether the session has an active WebSocket connection")
-    messages: List[MessageInfo] = Field(..., description="All messages in the session")
+    status: str = Field(..., description="Session status")
+    created_at: datetime = Field(...,
+                                 description="When the session was created")
+    is_connected: bool = Field(...,
+                               description="Whether the session has an active WebSocket connection")
+    messages: List[MessageInfo] = Field(...,
+                                        description="All messages in the session")
 
 
 class SendMessageResponse(BaseModel):
@@ -38,9 +44,12 @@ class SendMessageResponse(BaseModel):
 
 class RedisHealthResponse(BaseModel):
     status: str = Field(..., description="Health status (healthy/unhealthy)")
-    active_sessions: Optional[int] = Field(None, description="Number of active sessions")
-    sessions: Optional[List[str]] = Field(None, description="List of active session IDs")
-    error: Optional[str] = Field(None, description="Error message if unhealthy")
+    active_sessions: Optional[int] = Field(
+        None, description="Number of active sessions")
+    sessions: Optional[List[str]] = Field(
+        None, description="List of active session IDs")
+    error: Optional[str] = Field(
+        None, description="Error message if unhealthy")
 
 
 # Error Response Schema

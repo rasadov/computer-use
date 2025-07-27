@@ -104,8 +104,8 @@ COPY --chown=$USERNAME:$USERNAME app/ $HOME/app/
 COPY --chown=$USERNAME:$USERNAME frontend/ $HOME/frontend/
 
 # Copy the CUSTOM entrypoint LAST to override the original one
-COPY --chown=$USERNAME:$USERNAME entrypoint.sh $HOME/entrypoint.sh
-RUN chmod +x $HOME/entrypoint.sh
+COPY --chown=$USERNAME:$USERNAME start.sh $HOME/start.sh
+RUN chmod +x $HOME/start.sh
 
 ARG DISPLAY_NUM=1
 ARG HEIGHT=768
@@ -117,4 +117,4 @@ ENV WIDTH=$WIDTH
 # Set Python path to include the current directory
 ENV PYTHONPATH=$HOME
 
-ENTRYPOINT [ "./entrypoint.sh" ]
+ENTRYPOINT [ "./start.sh" ]

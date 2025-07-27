@@ -1,65 +1,85 @@
 import asyncio
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from pydantic_core.core_schema import model_schema
+from starlette.routing import request_response
 
 from app.dependencies import get_session_manager
 from app.services.ai_processing_service import process_message_and_save
 from app.services.session_manager import PostgresSessionManager
 from app.utils.convert import convert_to_anthropic_message
 from app.services.connection_manager import connection_manager
+from app.schemas import session as session_schemas
 
 router = APIRouter()
 
 
-@router.post("/sessions")
+@router.post("/sessions",
+    response_model=session_schemas.CreateSessionResponse,
+    tags=["Sessions"]
+)
 async def create_session(
         session_manager: PostgresSessionManager = Depends(get_session_manager)):
     session_id = await session_manager.create_session()
-    return {"session_id": session_id}
+    return session_schemas.CreateSessionResponse(session_id=session_id)
 
 
-@router.get("/sessions")
-async def list_sessions(
-        session_manager: PostgresSessionManager = Depends(get_session_manager)):
+@router.get("/sessions",
+    response_model=session_schemas.ListSessionsResponse,
+    tags=["Sessions"]
+)
+async def list_sessions(session_manager: PostgresSessionManager = Depends(get_session_manager)):
     sessions = await session_manager.list_sessions()
 
     # Also get active sessions from Redis
     active_redis_sessions = await connection_manager.get_active_sessions()
 
-    return {
-        "sessions": [
-            {
-                "id": s.id,
-                "status": s.status,
-                "created_at": s.created_at,
-                "is_connected": s.id in active_redis_sessions
-            }
+    return session_schemas.ListSessionsResponse(
+        sessions=[
+            session_schemas.SessionInfo(
+                id=s.id,
+                status=s.status,
+                created_at=s.created_at,
+                is_connected=s.id in active_redis_sessions
+            )
             for s in sessions
         ]
-    }
+    )
 
 
-@router.get("/sessions/{session_id}")
+@router.get("/sessions/{session_id}",
+    response_model=session_schemas.GetSessionResponse,
+    tags=["Sessions"]
+)
 async def get_session(
         session_id: str,
         session_manager: PostgresSessionManager = Depends(get_session_manager)):
     session = await session_manager.get_session(session_id)
     if session is None:
-        return {"error": "Session not found"}
+        return session_schemas.ErrorResponse(error="Session not found")
 
     messages = await session_manager.get_session_messages(session_id)
     is_connected = await connection_manager.is_session_active(session_id)
 
-    return {
-        "id": session.id,
-        "status": session.status,
-        "created_at": session.created_at,
-        "is_connected": is_connected,
-        "messages": [{"role": m.role, "content": m.content} for m in messages]
-    }
+    return session_schemas.GetSessionResponse(
+        id=session.id,
+        status=session.status,
+        created_at=session.created_at,
+        is_connected=is_connected,
+        messages=[
+            session_schemas.MessageInfo(
+                role=m.role,
+                content=m.content
+            )
+            for m in messages
+        ]
+    )
 
 
-@router.post("/sessions/{session_id}/messages")
+@router.post("/sessions/{session_id}/messages",
+    response_model=session_schemas.SendMessageResponse,
+    tags=["Sessions"]
+)
 async def send_message(
         session_id: str,
         message: dict,
@@ -69,11 +89,11 @@ async def send_message(
     session = await session_manager.get_session(session_id)
     if session is None:
         print(f"Session {session_id} not found")
-        return {"error": "Session not found"}
+        return session_schemas.ErrorResponse(error="Session not found")
 
     # Check if session is connected
     if not await connection_manager.is_session_active(session_id):
-        return {"error": "Session not connected"}
+        return session_schemas.ErrorResponse(error="Session not connected")
 
     try:
         print(f"Adding user message to database...")
@@ -96,13 +116,13 @@ async def send_message(
                 anthropic_messages,
                 session_manager))
 
-        return {"status": "processing"}
+        return session_schemas.SendMessageResponse(status="processing")
 
     except Exception as e:
         print(f"Error in send_message: {e}")
         import traceback
         traceback.print_exc()
-        return {"error": f"Failed to process message: {str(e)}"}
+        return session_schemas.ErrorResponse(error=f"Failed to process message: {str(e)}")
 
 
 @router.websocket("/sessions/{session_id}/ws")
@@ -129,20 +149,24 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         print(f"WebSocket error for session {session_id}: {e}")
         await connection_manager.remove_connection(session_id)
 
-# Optional: Health check endpoint for Redis connections
 
-
-@router.get("/sessions/health/redis")
+@router.get("/sessions/health/redis",
+    response_model=session_schemas.RedisHealthResponse,
+    tags=["Sessions"]
+)
 async def redis_health():
     try:
         active_sessions = await connection_manager.get_active_sessions()
-        return {
-            "status": "healthy",
-            "active_sessions": len(active_sessions),
-            "sessions": list(active_sessions.keys())
-        }
+        return session_schemas.RedisHealthResponse(
+            status="healthy",
+            active_sessions=len(active_sessions),
+            sessions=list(active_sessions.keys()),
+            error=None
+        )
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+        return session_schemas.RedisHealthResponse(
+            status="unhealthy",
+            active_sessions=None,
+            sessions=None,
+            error=str(e)
+        )

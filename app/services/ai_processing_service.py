@@ -3,12 +3,12 @@ import json
 
 from anthropic.types.beta import BetaContentBlockParam
 from httpx import Request, Response
-from app.services.connection_manager import RedisConnectionManager
-from computer_use_demo.loop import sampling_loop, APIProvider
 
+from app.services.connection_manager import RedisConnectionManager
 from app.config import settings
 from app.services.session_manager import SessionManager
 from app.utils.websocket import send_websocket_message
+from computer_use_demo.loop import sampling_loop
 from computer_use_demo.tools.base import ToolResult
 
 
@@ -98,15 +98,16 @@ async def process_message_and_save(
             try:
                 # This is the pure AI processing - no database operations
                 updated_messages = await sampling_loop(
-                    model="claude-sonnet-4-20250514",
-                    provider=APIProvider.ANTHROPIC,
+                    model=settings.MODEL_NAME,
+                    provider=settings.API_PROVIDER,
                     system_prompt_suffix="",
                     messages=anthropic_messages,
                     output_callback=output_callback,
                     tool_output_callback=tool_callback,
                     api_response_callback=api_callback,
                     api_key=settings.ANTHROPIC_API_KEY,
-                    tool_version="computer_use_20250124"
+                    tool_version=settings.TOOL_VERSION,
+                    max_tokens=settings.MAX_TOKENS,
                 )
                 break
             except Exception as e:

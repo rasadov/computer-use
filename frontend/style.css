@@ -1,88 +1,87 @@
 .message-container {
-    border: 1px solid #dee2e6;
+    margin-bottom: 1rem;
     border-radius: 8px;
-    margin-bottom: 12px;
     overflow: hidden;
+    border: 1px solid #e0e0e0;
 }
+
 .message-header {
-    background-color: #f8f9fa;
-    padding: 6px 12px;
-    font-weight: bold;
-    font-size: 0.9em;
-    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #e0e0e0;
 }
-.message-content {
-    padding: 12px;
-}
+
 .user-header {
-    background-color: #e3f2fd;
-    color: #1565c0;
-}
-.assistant-header {
-    background-color: #f3e5f5;
-    color: #6a1b9a;
-}
-.tool-header {
-    background-color: #e8f5e8;
-    color: #2e7d32;
-}
-.tool-use {
-    background-color: #f8f9fa;
-    border-left: 4px solid #007bff;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 4px;
-    font-family: monospace;
-}
-.tool-result {
-    background-color: #f1f3f4;
-    border-left: 4px solid #28a745;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 4px;
-}
-.assistant-message {
-    background-color: #e3f2fd;
-    color: #1565c0;
-}
-.user-message {
-    background-color: #1976d2;
+    background-color: #007bff;
     color: white;
 }
-.error-message {
-    background-color: #ffebee;
-    color: #c62828;
-    border-left: 4px solid #f44336;
+
+.assistant-header {
+    background-color: #28a745;
+    color: white;
 }
+
+.tool-header {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.message-content {
+    padding: 0.75rem;
+    background-color: white;
+}
+
+.message-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+}
+
 .session-item {
     cursor: pointer;
     transition: background-color 0.2s;
 }
+
 .session-item:hover {
     background-color: #f8f9fa;
 }
+
 .session-item.active {
     background-color: #e3f2fd;
-    border-color: #1976d2;
+    border-color: #2196f3;
 }
-#messages {
-    background-color: #fafafa;
-}
+
 .status-indicator {
     display: inline-block;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    margin-right: 8px;
+    margin-left: 0.5rem;
 }
+
 .status-active {
-    background-color: #4caf50;
+    background-color: #28a745;
 }
+
 .status-processing {
-    background-color: #ff9800;
-    animation: pulse 1s infinite;
+    background-color: #ffc107;
 }
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+.status-inactive {
+    background-color: #6c757d;
+}
+
+pre {
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }

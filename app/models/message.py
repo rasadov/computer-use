@@ -1,11 +1,12 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import String, Text, DateTime, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-from app.base.models import CustomBase
 from datetime import datetime
+
+from sqlalchemy import String, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy import JSON
 
+from app.base.models import CustomBase
 if TYPE_CHECKING:
     from app.models.session import SessionDB
 

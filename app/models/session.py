@@ -1,10 +1,11 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
+
 from sqlalchemy import String, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime
-from app.base.models import CustomBase
 from sqlalchemy.orm import relationship
 
+from app.base.models import CustomBase
 if TYPE_CHECKING:
     from app.models.message import ChatMessage
 

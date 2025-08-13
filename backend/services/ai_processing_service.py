@@ -88,12 +88,16 @@ async def process_message_and_save(
                 if hasattr(response, 'status_code'):
                     print(f"API Response: {response.status_code}") # type: ignore
 
-        print("Starting sampling loop...")
-        await send_websocket_message(websocket, "debug", "Starting sampling loop...")
+        await send_websocket_message(
+            websocket,
+            "debug",
+            "Starting sampling loop...",
+        )
 
         max_retries = 3
         updated_messages = []
 
+        # Try up to max_retries times
         for i in range(max_retries):
             try:
                 # This is the pure AI processing - no database operations
@@ -113,41 +117,55 @@ async def process_message_and_save(
             except Exception as e:
                 error_msg = f"Sampling loop failed: {str(e)}"
                 print(error_msg)
-                await send_websocket_message(websocket, "error", error_msg)
+                await send_websocket_message(
+                    websocket,
+                    "error",
+                    error_msg
+                )
         else:
+            # If we get here, it means we've tried max_retries times and failed
             error_msg = "Sampling loop failed after multiple retries"
             print(error_msg)
-            await send_websocket_message(websocket, "error", error_msg)
+            await send_websocket_message(
+                websocket,
+                "error",
+                error_msg
+            )
             return
 
-        await send_websocket_message(websocket, "debug", f"Sampling loop completed with {len(updated_messages)} messages")
+        await send_websocket_message(
+            websocket,
+            "debug",
+            f"Sampling loop completed with {len(updated_messages)} messages",
+        )
 
         # Extract only the new messages that were generated
         new_messages = updated_messages[original_message_count:]
 
         if len(new_messages) == 0:
             print("WARNING: No new messages to save!")
-            await send_websocket_message(websocket, "debug", "No new messages generated")
-            await send_websocket_message(websocket, "task_complete", "Task completed - no new messages")
+            await send_websocket_message(
+                websocket,
+                "task_complete",
+                "Task completed - no new messages",
+            )
             return
 
-        print(
-            f"AI processing complete. Generated {len(new_messages)} new messages. Now saving to database...")
+        print(f"AI processing complete. Generated {len(new_messages)}"
+                " new messages. Now saving to database...")
 
         # Now save the results using the same session manager (same DB session
         # as the request)
         saved_count = 0
         for i, msg in enumerate(new_messages):
             try:
-                print(
-                    f"Processing new message {i+1}/{len(new_messages)}: {msg.get('role')}")
+                print(f"Processing new message {i+1}/{len(new_messages)}: {msg.get('role')}")
 
                 # Convert content to JSON string for storage
                 content_data = msg.get("content", [])
                 content_str = json.dumps(content_data) if content_data else ""
 
-                print(
-                    f"Saving message with role '{msg.get('role')}': {content_str[:100]}...")
+                print(f"Saving message with role '{msg.get('role')}': {content_str[:100]}...")
                 saved_msg = await session_manager.add_message(
                     session_id=session_id,
                     role=msg.get("role", "assistant"),
@@ -163,11 +181,14 @@ async def process_message_and_save(
                 # Continue with other messages even if one fails
                 continue
 
-        print(
-            f"Database save complete. Saved {saved_count}/{len(new_messages)} messages.")
+        print(f"Database save complete. Saved {saved_count}/{len(new_messages)} messages.")
 
         # Send completion signal
-        await send_websocket_message(websocket, "task_complete", f"Task completed successfully. Saved {saved_count} new messages.")
+        await send_websocket_message(
+            websocket,
+            "task_complete",
+            f"Task completed successfully. Saved {saved_count} new messages.",
+        )
 
     except Exception as e:
         error_msg = f"Error processing message: {str(e)}"
@@ -176,4 +197,8 @@ async def process_message_and_save(
         traceback.print_exc()
         websocket = await connection_manager.get_connection(session_id)
         if websocket:
-            await send_websocket_message(websocket, "error", error_msg)
+            await send_websocket_message(
+                websocket,
+                "error",
+                error_msg,
+            )

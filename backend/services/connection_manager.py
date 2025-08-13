@@ -37,7 +37,7 @@ class RedisConnectionManager:
         self.local_connections[session_id] = websocket
 
         # Store session info in Redis for distributed tracking
-        await self.redis_client.hset(
+        await self.redis_client.hset( # type: ignore
             "active_sessions",
             session_id,
             json.dumps({
@@ -57,7 +57,7 @@ class RedisConnectionManager:
             del self.local_connections[session_id]
 
         # Remove from Redis
-        await self.redis_client.hdel("active_sessions", session_id)
+        await self.redis_client.hdel("active_sessions", session_id) # type: ignore
 
         logger.info(f"Removed connection for session {session_id}")
 
@@ -68,12 +68,12 @@ class RedisConnectionManager:
     async def is_session_active(self, session_id: str) -> bool:
         """Check if session is active across all instances"""
         await self.connect()
-        return await self.redis_client.hexists("active_sessions", session_id)
+        return await self.redis_client.hexists("active_sessions", session_id) # type: ignore
 
     async def get_active_sessions(self) -> Dict[str, dict]:
         """Get all active sessions from Redis"""
         await self.connect()
-        sessions_data = await self.redis_client.hgetall("active_sessions")
+        sessions_data = await self.redis_client.hgetall("active_sessions") # type: ignore
 
         result = {}
         for session_id, data_str in sessions_data.items():
@@ -107,21 +107,5 @@ class RedisConnectionManager:
             await self.remove_connection(session_id)
             return False
 
-    async def cleanup_stale_connections(self):
-        """Remove stale connections (optional maintenance method)"""
-        await self.connect()
 
-        # Check local connections
-        stale_sessions = []
-        for session_id, websocket in list(self.local_connections.items()):
-            try:
-                # Try to ping the websocket (basic check)
-                await websocket.send_text("ping")
-            except BaseException:
-                stale_sessions.append(session_id)
-
-        # Remove stale connections
-        for session_id in stale_sessions:
-            await self.remove_connection(session_id)
-
-        logger.info(f"Cleaned up {len(stale_sessions)} stale connections")
+connection_manager = RedisConnectionManager()

@@ -1,10 +1,9 @@
-from typing import AsyncGenerator
 from logging import getLogger
+from typing import AsyncGenerator
 
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from backend.database import SessionLocal
 from backend.repositories.message_repository import MessageRepository
 from backend.repositories.session_repository import SessionRepository
 from backend.services.connection_manager import RedisConnectionManager
@@ -14,14 +13,13 @@ from backend.services.session_manager import SessionManager
 logger = getLogger(__name__)
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with SessionLocal() as db:
+async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
+    async_session: async_sessionmaker[AsyncSession] = request.app.state.async_session
+    async with async_session() as session:
         try:
-            yield db
-        except Exception as e:
-            logger.error(f"Database error: {e}")
-            await db.rollback()
-            raise
+            yield session
+        finally:
+            await session.close()
 
 
 async def get_message_repository(
@@ -45,5 +43,5 @@ async def get_session_manager(
         messages_repository,
     )
 
-async def get_connection_manager() -> RedisConnectionManager:
-    return RedisConnectionManager()
+def get_connection_manager(request: Request) -> RedisConnectionManager:
+    return request.app.state.connection_manager

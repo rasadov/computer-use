@@ -12,4 +12,11 @@ T = TypeVar("T", bound=CustomBase)
 
 @dataclass
 class BaseRepository(ABC, Generic[T]):
+    """Base repository class
+    
+    Args:
+        session (AsyncSession): Async session for database operations
+
+    TODO: add abstract methods
+    """
     session: AsyncSession

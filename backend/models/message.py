@@ -8,6 +8,8 @@ from sqlalchemy import JSON
 
 from backend.base.models import CustomBase
 if TYPE_CHECKING:
+    # Import SessionDB for type checking
+    # If statement is needed to avoid circular import
     from backend.models.session import SessionDB
 
 
@@ -17,9 +19,12 @@ class ChatMessage(CustomBase):
     Parameters:
         session_id: str
         role: str
-        content: str
+        content: dict
         timestamp: datetime
         message_type: str
+    
+    Relationships:
+        session: SessionDB
     """
     __tablename__ = "chat_messages"
 

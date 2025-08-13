@@ -7,10 +7,24 @@ from sqlalchemy.orm import relationship
 
 from backend.base.models import CustomBase
 if TYPE_CHECKING:
+    # Import ChatMessage for type checking
+    # If statement is needed to avoid circular import
     from backend.models.message import ChatMessage
 
 
 class SessionDB(CustomBase):
+    """
+    Session model
+    
+    Parameters:
+        created_at: datetime
+        updated_at: datetime
+        status: str
+        session_metadata: dict
+    
+    Relationships:
+        messages: list[ChatMessage]
+    """
     __tablename__ = "sessions"
 
     created_at: Mapped[datetime] = mapped_column(

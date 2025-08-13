@@ -8,12 +8,32 @@ from backend.models.session import SessionDB
 
 
 class SessionRepository(BaseRepository[SessionDB]):
+    """
+    SessionRepository - implements method to get, add, update or delete sessions from database
+    
+    Args:
+        session (AsyncSession): Async session for database operations
+    """
+    
     async def create(self, model: SessionDB) -> SessionDB:
+        """Create a new session
+        Args:
+            model (SessionDB): Session object to create
+        Returns:
+            SessionDB: Created session object
+        """
         self.session.add(model)
         await self.session.commit()
         return model
 
     async def update(self, id: str, fields: dict) -> SessionDB:
+        """Update a session
+        Args:
+            id (str): Session id
+            fields (dict): Dictionary of fields to update
+        Returns:
+            SessionDB: Updated session object
+        """
         session = await self.get_by_id(id)
         if not session:
             raise ValueError(f"Session {id} not found")
@@ -23,6 +43,12 @@ class SessionRepository(BaseRepository[SessionDB]):
         return session
 
     async def delete(self, id: str) -> bool:
+        """Delete a session
+        Args:
+            id (str): Session id
+        Returns:
+            bool: True if session was deleted, False otherwise
+        """
         session = await self.get_by_id(id)
         if not session:
             raise ValueError(f"Session {id} not found")
@@ -30,15 +56,23 @@ class SessionRepository(BaseRepository[SessionDB]):
         await self.session.commit()
         return True
 
-    from sqlalchemy.orm import selectinload
-
     async def get_by_id(self, id: str) -> Optional[SessionDB]:
+        """Get a session by id
+        Args:
+            id (str): Session id
+        Returns:
+            Optional[SessionDB]: Session object or None if not found
+        """
         result = await self.session.execute(
             select(SessionDB).options(selectinload(SessionDB.messages)).where(SessionDB.id == id)
         )
         return result.scalar_one_or_none()
 
     async def get_all(self) -> Sequence[SessionDB]:
+        """Get all sessions
+        Returns:
+            Sequence[SessionDB]: List of all sessions
+        """
         result = await self.session.execute(select(SessionDB).options(
             joinedload(SessionDB.messages)
         ))

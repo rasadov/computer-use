@@ -1,13 +1,58 @@
 from typing import Optional, Sequence
 
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from backend.base.repository import BaseRepository
 from backend.models.message import ChatMessage
 
 
 class MessageRepository(BaseRepository[ChatMessage]):
+    """
+    MessageRepository - implements method to get, add, update or delete messages from database
+
+    Args:
+        session (AsyncSession): Async session for database operations
+    """
+
+    async def get_by_id(self, id: str) -> Optional[ChatMessage]:
+        """Get a message by id
+        Returns:
+            Optional[ChatMessage]: Message object or None if not found
+        """
+        result = await self.session.execute(select(ChatMessage).where(ChatMessage.id == id))
+        return result.scalar_one_or_none()
+
+    async def get_all(self) -> Sequence[ChatMessage]:
+        """Get all messages
+        Returns:
+            Sequence[ChatMessage]: List of all messages
+        """
+        result = await self.session.execute(select(ChatMessage))
+        return result.scalars().all()
+
+    async def get_by_session_id(
+            self, session_id: str) -> Sequence[ChatMessage]:
+        """Get all messages for a specific session, ordered by timestamp
+        Args:
+            session_id (str): Session id
+        Returns:
+            Sequence[ChatMessage]: List of messages for the session
+        """
+        result = await self.session.execute(
+            select(ChatMessage)
+            .where(ChatMessage.session_id == session_id)
+            .order_by(ChatMessage.timestamp)
+        )
+        return result.scalars().all()
+
     async def create(self, model: ChatMessage) -> ChatMessage:
+        """Create a new message
+        Args:
+            model (ChatMessage): Message object to create
+        Returns:
+            ChatMessage: Created message object
+        """
         try:
             self.session.add(model)
             await self.session.commit()
@@ -21,6 +66,13 @@ class MessageRepository(BaseRepository[ChatMessage]):
             raise
 
     async def update(self, id: str, fields: dict) -> ChatMessage:
+        """Update a message
+        Args:
+            id (str): Message id
+            fields (dict): Dictionary of fields to update
+        Returns:
+            ChatMessage: Updated message object
+        """
         message = await self.get_by_id(id)
         if not message:
             raise ValueError(f"Message {id} not found")
@@ -30,27 +82,15 @@ class MessageRepository(BaseRepository[ChatMessage]):
         return message
 
     async def delete(self, id: str) -> bool:
+        """Delete a message
+        Args:
+            id (str): Message id
+        Returns:
+            bool: True if message was deleted, False otherwise
+        """
         message = await self.get_by_id(id)
         if not message:
             raise ValueError(f"Message {id} not found")
         await self.session.delete(message)
         await self.session.commit()
         return True
-
-    async def get_by_id(self, id: str) -> Optional[ChatMessage]:
-        result = await self.session.execute(select(ChatMessage).where(ChatMessage.id == id))
-        return result.scalar_one_or_none()
-
-    async def get_all(self) -> Sequence[ChatMessage]:
-        result = await self.session.execute(select(ChatMessage))
-        return result.scalars().all()
-
-    async def get_by_session_id(
-            self, session_id: str) -> Sequence[ChatMessage]:
-        """Get all messages for a specific session, ordered by timestamp"""
-        result = await self.session.execute(
-            select(ChatMessage)
-            .where(ChatMessage.session_id == session_id)
-            .order_by(ChatMessage.timestamp)
-        )
-        return result.scalars().all()

@@ -18,15 +18,18 @@ class BaseSessionManager(ABC):
 
     @abstractmethod
     async def create_session(self) -> str:
+        """Create a new session"""
         pass
 
     @abstractmethod
     async def get_session(self, session_id: str) -> Optional[SessionDB]:
+        """Get a session by id"""
         pass
 
     @abstractmethod
     async def get_session_messages(
             self, session_id: str) -> Sequence[ChatMessage]:
+        """Get messages for a session"""
         pass
 
     @abstractmethod
@@ -35,8 +38,10 @@ class BaseSessionManager(ABC):
             session_id: str,
             role: str,
             content: str) -> ChatMessage:
+        """Add a message to a session"""
         pass
 
     @abstractmethod
     async def list_sessions(self) -> Sequence[SessionDB]:
+        """List all sessions"""
         pass

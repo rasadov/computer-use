@@ -1,0 +1,41 @@
+{
+    "version": 1,
+    "formatters": {
+        "json": {
+            "format": "json",
+            "fields": ["timestamp", "level", "message", "extras"]
+        },
+        "simple": {
+            "format": "text",
+            "template": "{timestamp} [{level}] {message}"
+        },
+        "email": {
+            "format": "text",
+            "template": "[{level: <8}] {timestamp} | {message} | {module} | {function} | {lineno}"
+        }
+    },
+    "handlers": {
+        "file": {
+            "type": "file",
+            "filename": "app.log",
+            "formatter": "json",
+            "level": "DEBUG"
+        },
+        "console": {
+            "type": "stdout",
+            "formatter": "simple",
+            "level": "ERROR"
+        },
+        "email": {
+            "type": "email",
+            "formatter": "email",
+            "level": "CRITICAL"
+        }
+    },
+    "loggers": {
+        "root": {
+            "level": "DEBUG",
+            "handlers": ["file", "console", "email"]
+        }
+    }
+}

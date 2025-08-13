@@ -5,7 +5,7 @@ from anthropic.types.beta import BetaContentBlockParam
 from httpx import Request, Response
 
 from backend.services.connection_manager import RedisConnectionManager
-from backend.config import settings
+from backend.core.config import settings
 from backend.services.session_manager import SessionManager
 from backend.models.enums import TaskStatus
 from backend.utils.websocket import send_websocket_message

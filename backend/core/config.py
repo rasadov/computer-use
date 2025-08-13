@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import os
 
 from pydantic_settings import BaseSettings

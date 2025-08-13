@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
 
-from backend.config import settings
+from backend.core.config import settings
 from backend.database import engine, SessionLocal
 from backend.router.session_router import router as session_router
 from backend.services.connection_manager import connection_manager

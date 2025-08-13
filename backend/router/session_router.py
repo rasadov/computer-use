@@ -2,7 +2,7 @@ import asyncio
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
-from backend.dependencies import get_session_manager, get_connection_manager
+from backend.core.dependencies import get_session_manager, get_connection_manager
 from backend.models.enums import SessionStatus
 from backend.services.ai_processing_service import process_message_and_save
 from backend.services.connection_manager import RedisConnectionManager

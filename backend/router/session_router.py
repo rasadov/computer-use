@@ -3,6 +3,7 @@ import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
 from backend.dependencies import get_session_manager, get_connection_manager
+from backend.models.enums import SessionStatus
 from backend.services.ai_processing_service import process_message_and_save
 from backend.services.connection_manager import RedisConnectionManager
 from backend.services.session_manager import SessionManager
@@ -144,7 +145,7 @@ async def websocket_endpoint(
         print(f"Cleaning up session {session_id}")
         try:
             await connection_manager.remove_connection(session_id)
-            await session_manager.update_session_status(session_id, "inactive")
+            await session_manager.update_session_status(session_id, SessionStatus.INACTIVE)
         except Exception as e:
             print(f"Error cleaning up session {session_id}: {e}")
 

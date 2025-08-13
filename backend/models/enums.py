@@ -9,7 +9,6 @@ class SessionStatus(StrEnum):
 
 class TaskStatus(StrEnum):
     """Task status enum"""
-    IDLE = "idle"
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"

@@ -5,9 +5,9 @@ from datetime import datetime
 from backend.base.session_mager import BaseSessionManager
 from backend.models.session import SessionDB
 from backend.models.message import ChatMessage
+from backend.models.enums import SessionStatus
 from backend.repositories.session_repository import SessionRepository
 from backend.repositories.message_repository import MessageRepository
-
 
 class SessionManager(BaseSessionManager):
     """
@@ -24,7 +24,7 @@ class SessionManager(BaseSessionManager):
         session = SessionDB(
             id=session_id,
             messages=[],
-            status="active",
+            status=SessionStatus.ACTIVE,
             created_at=datetime.now(),
             updated_at=datetime.now()
         )
@@ -54,8 +54,8 @@ class SessionManager(BaseSessionManager):
         )
         return await self.message_repository.create(message)
 
-    async def update_session_status(self, session_id: str, status: str):
-        await self.session_repository.update(session_id, {"status": status})
+    async def update_session_status(self, session_id: str, status: SessionStatus):
+        await self.session_repository.update(session_id, {"status": status.value})
 
     async def list_sessions(self) -> Sequence[SessionDB]:
         return await self.session_repository.get_all()

@@ -7,6 +7,7 @@ from httpx import Request, Response
 from backend.services.connection_manager import RedisConnectionManager
 from backend.config import settings
 from backend.services.session_manager import SessionManager
+from backend.models.enums import TaskStatus
 from backend.utils.websocket import send_websocket_message
 from computer_use_demo.loop import sampling_loop
 from computer_use_demo.tools.base import ToolResult
@@ -30,7 +31,12 @@ async def process_message_and_save(
         original_message_count = len(anthropic_messages)
 
         # Send debug info to client
-        await send_websocket_message(websocket, "debug", f"Starting processing with {len(anthropic_messages)} messages")
+        await send_websocket_message(
+            websocket,
+            TaskStatus.PENDING,
+            "debug",
+            f"Starting processing with {len(anthropic_messages)} messages"
+        )
 
         # Callbacks for AI processing
 
@@ -48,7 +54,10 @@ async def process_message_and_save(
                 print(f"No websocket connection for session {session_id}")
                 return
             asyncio.create_task(send_websocket_message(
-                websocket, "assistant_message", content_dict
+                websocket,
+                TaskStatus.RUNNING,
+                "assistant_message",
+                content_dict
             ))
 
         def tool_callback(result: ToolResult, tool_id: str):
@@ -68,7 +77,10 @@ async def process_message_and_save(
                 print(f"No websocket connection for session {session_id}")
                 return
             asyncio.create_task(send_websocket_message(
-                websocket, "tool_result", result_dict
+                websocket,
+                TaskStatus.RUNNING,
+                "tool_result",
+                result_dict
             ))
 
         def api_callback(
@@ -81,7 +93,10 @@ async def process_message_and_save(
                     print(f"No websocket connection for session {session_id}")
                     return
                 asyncio.create_task(send_websocket_message(
-                    websocket, "error", f"API Error: {str(error)}"
+                    websocket,
+                    TaskStatus.ERROR,
+                    "error",
+                    f"API Error: {str(error)}"
                 ))
             else:
                 print(f"API Request: {request.method} {request.url}")
@@ -90,6 +105,7 @@ async def process_message_and_save(
 
         await send_websocket_message(
             websocket,
+            TaskStatus.RUNNING,
             "debug",
             "Starting sampling loop...",
         )
@@ -119,6 +135,7 @@ async def process_message_and_save(
                 print(error_msg)
                 await send_websocket_message(
                     websocket,
+                    TaskStatus.ERROR,
                     "error",
                     error_msg
                 )
@@ -128,6 +145,7 @@ async def process_message_and_save(
             print(error_msg)
             await send_websocket_message(
                 websocket,
+                TaskStatus.ERROR,
                 "error",
                 error_msg
             )
@@ -135,6 +153,7 @@ async def process_message_and_save(
 
         await send_websocket_message(
             websocket,
+            TaskStatus.RUNNING,
             "debug",
             f"Sampling loop completed with {len(updated_messages)} messages",
         )
@@ -146,6 +165,7 @@ async def process_message_and_save(
             print("WARNING: No new messages to save!")
             await send_websocket_message(
                 websocket,
+                TaskStatus.COMPLETED,
                 "task_complete",
                 "Task completed - no new messages",
             )
@@ -186,6 +206,7 @@ async def process_message_and_save(
         # Send completion signal
         await send_websocket_message(
             websocket,
+            TaskStatus.COMPLETED,
             "task_complete",
             f"Task completed successfully. Saved {saved_count} new messages.",
         )
@@ -199,6 +220,7 @@ async def process_message_and_save(
         if websocket:
             await send_websocket_message(
                 websocket,
+                TaskStatus.ERROR,
                 "error",
                 error_msg,
             )

@@ -2,12 +2,12 @@ import asyncio
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
-from app.dependencies import get_session_manager
-from app.services.ai_processing_service import process_message_and_save
-from app.services.session_manager import SessionManager
-from app.utils.convert import convert_to_anthropic_message
-from app.services.connection_manager import connection_manager
-from app.schemas import session as session_schemas
+from backend.dependencies import get_session_manager
+from backend.services.ai_processing_service import process_message_and_save
+from backend.services.session_manager import SessionManager
+from backend.utils.convert import convert_to_anthropic_message
+from backend.services.connection_manager import connection_manager
+from backend.schemas import session as session_schemas
 
 router = APIRouter()
 

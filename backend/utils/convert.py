@@ -1,4 +1,4 @@
-from app.models.message import ChatMessage
+from backend.models.message import ChatMessage
 from anthropic.types.beta import BetaMessageParam, BetaTextBlockParam
 import json
 

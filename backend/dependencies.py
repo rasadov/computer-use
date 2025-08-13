@@ -4,10 +4,10 @@ from logging import getLogger
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import SessionLocal
-from app.repositories.message_repository import MessageRepository
-from app.repositories.session_repository import SessionRepository
-from app.services.session_manager import SessionManager
+from backend.database import SessionLocal
+from backend.repositories.message_repository import MessageRepository
+from backend.repositories.session_repository import SessionRepository
+from backend.services.session_manager import SessionManager
 
 
 logger = getLogger(__name__)

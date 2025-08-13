@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from app.models.session import SessionDB
-from app.models.message import ChatMessage
-from app.repositories.session_repository import SessionRepository
-from app.repositories.message_repository import MessageRepository
+from backend.models.session import SessionDB
+from backend.models.message import ChatMessage
+from backend.repositories.session_repository import SessionRepository
+from backend.repositories.message_repository import MessageRepository
 
 
 @dataclass

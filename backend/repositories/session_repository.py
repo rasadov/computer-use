@@ -3,8 +3,8 @@ from typing import Optional, Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
-from app.base.repository import BaseRepository
-from app.models.session import SessionDB
+from backend.base.repository import BaseRepository
+from backend.models.session import SessionDB
 
 
 class SessionRepository(BaseRepository[SessionDB]):

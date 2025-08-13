@@ -2,8 +2,8 @@ from typing import Optional, Sequence
 
 from sqlalchemy import select
 
-from app.base.repository import BaseRepository
-from app.models.message import ChatMessage
+from backend.base.repository import BaseRepository
+from backend.models.message import ChatMessage
 
 
 class MessageRepository(BaseRepository[ChatMessage]):

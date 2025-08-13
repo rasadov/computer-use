@@ -4,10 +4,10 @@ import json
 from anthropic.types.beta import BetaContentBlockParam
 from httpx import Request, Response
 
-from app.services.connection_manager import RedisConnectionManager
-from app.config import settings
-from app.services.session_manager import SessionManager
-from app.utils.websocket import send_websocket_message
+from backend.services.connection_manager import RedisConnectionManager
+from backend.config import settings
+from backend.services.session_manager import SessionManager
+from backend.utils.websocket import send_websocket_message
 from computer_use_demo.loop import sampling_loop
 from computer_use_demo.tools.base import ToolResult
 

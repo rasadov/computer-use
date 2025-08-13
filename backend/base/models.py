@@ -1,7 +1,7 @@
 from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy import String
 
-from app.database import Base
+from backend.database import Base
 
 
 class CustomBase(Base):

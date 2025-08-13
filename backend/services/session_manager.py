@@ -2,11 +2,11 @@ import uuid
 from typing import Optional, Sequence
 from datetime import datetime
 
-from app.base.session_mager import BaseSessionManager
-from app.models.session import SessionDB
-from app.models.message import ChatMessage
-from app.repositories.session_repository import SessionRepository
-from app.repositories.message_repository import MessageRepository
+from backend.base.session_mager import BaseSessionManager
+from backend.models.session import SessionDB
+from backend.models.message import ChatMessage
+from backend.repositories.session_repository import SessionRepository
+from backend.repositories.message_repository import MessageRepository
 
 
 class SessionManager(BaseSessionManager):

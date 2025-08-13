@@ -6,9 +6,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from sqlalchemy import JSON
 
-from app.base.models import CustomBase
+from backend.base.models import CustomBase
 if TYPE_CHECKING:
-    from app.models.session import SessionDB
+    from backend.models.session import SessionDB
 
 
 class ChatMessage(CustomBase):

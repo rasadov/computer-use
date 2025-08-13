@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.base.models import CustomBase
+from backend.base.models import CustomBase
 
 
 T = TypeVar("T", bound=CustomBase)

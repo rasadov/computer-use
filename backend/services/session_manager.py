@@ -54,5 +54,8 @@ class SessionManager(BaseSessionManager):
         )
         return await self.message_repository.create(message)
 
+    async def update_session_status(self, session_id: str, status: str):
+        await self.session_repository.update(session_id, {"status": status})
+
     async def list_sessions(self) -> Sequence[SessionDB]:
         return await self.session_repository.get_all()

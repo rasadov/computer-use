@@ -7,6 +7,7 @@ from typing import Dict, Optional
 import redis.asyncio as redis
 from fastapi import WebSocket
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -115,7 +116,7 @@ class RedisConnectionManager:
         for session_id, websocket in list(self.local_connections.items()):
             try:
                 # Try to ping the websocket (basic check)
-                await websocket.ping()
+                await websocket.send_text("ping")
             except BaseException:
                 stale_sessions.append(session_id)
 
@@ -124,6 +125,3 @@ class RedisConnectionManager:
             await self.remove_connection(session_id)
 
         logger.info(f"Cleaned up {len(stale_sessions)} stale connections")
-
-
-connection_manager = RedisConnectionManager()

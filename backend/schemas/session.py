@@ -13,8 +13,6 @@ class SessionInfo(BaseModel):
     status: str = Field(..., description="Session status")
     created_at: datetime = Field(...,
                                  description="When the session was created")
-    is_connected: bool = Field(...,
-                               description="Whether the session has an active WebSocket connection")
 
 
 class ListSessionsResponse(BaseModel):
@@ -32,8 +30,6 @@ class GetSessionResponse(BaseModel):
     status: str = Field(..., description="Session status")
     created_at: datetime = Field(...,
                                  description="When the session was created")
-    is_connected: bool = Field(...,
-                               description="Whether the session has an active WebSocket connection")
     messages: List[MessageInfo] = Field(...,
                                         description="All messages in the session")
 

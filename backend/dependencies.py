@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import SessionLocal
 from backend.repositories.message_repository import MessageRepository
 from backend.repositories.session_repository import SessionRepository
+from backend.services.connection_manager import RedisConnectionManager
 from backend.services.session_manager import SessionManager
 
 
@@ -43,3 +44,6 @@ async def get_session_manager(
         session_repository,
         messages_repository,
     )
+
+async def get_connection_manager() -> RedisConnectionManager:
+    return RedisConnectionManager()

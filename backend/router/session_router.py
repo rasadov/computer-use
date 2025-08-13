@@ -2,12 +2,13 @@ import asyncio
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
-from backend.dependencies import get_session_manager
+from backend.dependencies import get_session_manager, get_connection_manager
 from backend.services.ai_processing_service import process_message_and_save
+from backend.services.connection_manager import RedisConnectionManager
 from backend.services.session_manager import SessionManager
 from backend.utils.convert import convert_to_anthropic_message
-from backend.services.connection_manager import connection_manager
 from backend.schemas import session as session_schemas
+
 
 router = APIRouter()
 
@@ -17,7 +18,9 @@ router = APIRouter()
              tags=["Sessions"]
              )
 async def create_session(
-        session_manager: SessionManager = Depends(get_session_manager)):
+    session_manager: SessionManager = Depends(get_session_manager),
+):
+    """Create a new session"""
     session_id = await session_manager.create_session()
     return session_schemas.CreateSessionResponse(session_id=session_id)
 
@@ -27,19 +30,17 @@ async def create_session(
             tags=["Sessions"]
             )
 async def list_sessions(
-        session_manager: SessionManager = Depends(get_session_manager)):
+    session_manager: SessionManager = Depends(get_session_manager),
+):
+    """List all sessions"""
     sessions = await session_manager.list_sessions()
-
-    # Also get active sessions from Redis
-    active_redis_sessions = await connection_manager.get_active_sessions()
 
     return session_schemas.ListSessionsResponse(
         sessions=[
             session_schemas.SessionInfo(
                 id=s.id,
                 status=s.status,
-                created_at=s.created_at,
-                is_connected=s.id in active_redis_sessions
+                created_at=s.created_at
             )
             for s in sessions
         ]
@@ -51,20 +52,20 @@ async def list_sessions(
             tags=["Sessions"]
             )
 async def get_session(
-        session_id: str,
-        session_manager: SessionManager = Depends(get_session_manager)):
+    session_id: str,
+    session_manager: SessionManager = Depends(get_session_manager),
+):
+    """Get a session by id"""
     session = await session_manager.get_session(session_id)
     if session is None:
         return session_schemas.ErrorResponse(error="Session not found")
 
     messages = await session_manager.get_session_messages(session_id)
-    is_connected = await connection_manager.is_session_active(session_id)
 
     return session_schemas.GetSessionResponse(
         id=session.id,
         status=session.status,
         created_at=session.created_at,
-        is_connected=is_connected,
         messages=[
             session_schemas.MessageInfo(
                 role=m.role,
@@ -80,9 +81,12 @@ async def get_session(
              tags=["Sessions"]
              )
 async def send_message(
-        session_id: str,
-        message: dict,
-        session_manager: SessionManager = Depends(get_session_manager)):
+    session_id: str,
+    message: dict,
+    session_manager: SessionManager = Depends(get_session_manager),
+    connection_manager: RedisConnectionManager = Depends(get_connection_manager),
+):
+    """Send a message to a session"""
     print(f"Received message for session {session_id}: {message}")
 
     session = await session_manager.get_session(session_id)
@@ -126,10 +130,23 @@ async def send_message(
 
 
 @router.websocket("/sessions/{session_id}/ws")
-async def websocket_endpoint(websocket: WebSocket, session_id: str):
+async def websocket_endpoint(
+    websocket: WebSocket, session_id: str,
+    session_manager: SessionManager = Depends(get_session_manager),
+    connection_manager: RedisConnectionManager = Depends(get_connection_manager),
+):
     """WebSocket endpoint for real-time updates from the agent"""
     await websocket.accept()
     await connection_manager.add_connection(session_id, websocket)
+
+    async def cleanup():
+        """Cleanup function to remove connection and update session status"""
+        print(f"Cleaning up session {session_id}")
+        try:
+            await connection_manager.remove_connection(session_id)
+            await session_manager.update_session_status(session_id, "inactive")
+        except Exception as e:
+            print(f"Error cleaning up session {session_id}: {e}")
 
     try:
         # Send connection confirmation
@@ -144,17 +161,20 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
             await websocket.receive_text()
 
     except WebSocketDisconnect:
-        await connection_manager.remove_connection(session_id)
+        await cleanup()
     except Exception as e:
         print(f"WebSocket error for session {session_id}: {e}")
-        await connection_manager.remove_connection(session_id)
+        await cleanup()
 
 
 @router.get("/sessions/health/redis",
             response_model=session_schemas.RedisHealthResponse,
             tags=["Sessions"]
             )
-async def redis_health():
+async def redis_health(
+    connection_manager: RedisConnectionManager = Depends(get_connection_manager)
+):
+    """Check Redis health"""
     try:
         active_sessions = await connection_manager.get_active_sessions()
         return session_schemas.RedisHealthResponse(

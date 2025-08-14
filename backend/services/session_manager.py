@@ -9,6 +9,7 @@ from backend.models.enums import SessionStatus
 from backend.repositories.session_repository import SessionRepository
 from backend.repositories.message_repository import MessageRepository
 
+
 class SessionManager(BaseSessionManager):
     """
     Implementation of SessionManager using SQLAlchemy

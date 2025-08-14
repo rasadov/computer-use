@@ -43,6 +43,7 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_URL=redis://redis:6379
       - DEBUG=${DEBUG:-false}
+      - G_SLICE=always-malloc
     depends_on:
       db:
         condition: service_healthy

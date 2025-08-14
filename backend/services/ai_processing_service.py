@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 
 from anthropic.types.beta import BetaContentBlockParam
 from httpx import Request, Response
@@ -13,6 +14,9 @@ from computer_use_demo.loop import sampling_loop
 from computer_use_demo.tools.base import ToolResult
 
 
+logger = logging.getLogger(__name__)
+
+
 async def process_message_and_save(
         session_id: str,
         connection_manager: RedisConnectionManager,
@@ -21,12 +25,12 @@ async def process_message_and_save(
     """Process message with AI and save results to database"""
     try:
         if not await connection_manager.is_session_active(session_id):
-            print(f"No websocket connection for session {session_id}")
+            logger.warning(f"No websocket connection for session {session_id}")
             return
 
         websocket = await connection_manager.get_connection(session_id)
         if not websocket:
-            print(f"No websocket connection for session {session_id}")
+            logger.warning(f"No websocket connection for session {session_id}")
             return
         original_message_count = len(anthropic_messages)
 
@@ -42,7 +46,7 @@ async def process_message_and_save(
 
         def output_callback(content: BetaContentBlockParam):
             """Handle assistant output"""
-            print(f"Output callback received: {content.get('text')}")
+            logger.info(f"Output callback received: {content.get('text')}")
             if hasattr(content, 'model_dump'):
                 content_dict = content.model_dump()  # type: ignore
             elif isinstance(content, dict):
@@ -51,7 +55,7 @@ async def process_message_and_save(
                 content_dict = {"type": "text", "text": str(content)}
 
             if not websocket:
-                print(f"No websocket connection for session {session_id}")
+                logger.warning(f"No websocket connection for session {session_id}")
                 return
             asyncio.create_task(send_websocket_message(
                 websocket,
@@ -62,7 +66,7 @@ async def process_message_and_save(
 
         def tool_callback(result: ToolResult, tool_id: str):
             """Handle tool results"""
-            print(f"Tool callback - ID: {tool_id}")
+            logger.info(f"Tool callback - ID: {tool_id}")
             result_dict = {}
             if hasattr(result, 'output') and result.output:
                 result_dict['output'] = result.output
@@ -74,7 +78,7 @@ async def process_message_and_save(
                 result_dict['system'] = result.system
 
             if not websocket:
-                print(f"No websocket connection for session {session_id}")
+                logger.warning(f"No websocket connection for session {session_id}")
                 return
             asyncio.create_task(send_websocket_message(
                 websocket,
@@ -90,7 +94,7 @@ async def process_message_and_save(
             """Handle API responses/errors"""
             if error:
                 if not websocket:
-                    print(f"No websocket connection for session {session_id}")
+                    logger.warning(f"No websocket connection for session {session_id}")
                     return
                 asyncio.create_task(send_websocket_message(
                     websocket,
@@ -99,9 +103,9 @@ async def process_message_and_save(
                     f"API Error: {str(error)}"
                 ))
             else:
-                print(f"API Request: {request.method} {request.url}")
+                logger.info(f"API Request: {request.method} {request.url}")
                 if hasattr(response, 'status_code'):
-                    print(f"API Response: {response.status_code}") # type: ignore
+                    logger.info(f"API Response: {response.status_code}") # type: ignore
 
         await send_websocket_message(
             websocket,
@@ -131,23 +135,15 @@ async def process_message_and_save(
                 )
                 break
             except Exception as e:
-                error_msg = f"Sampling loop failed: {str(e)}"
-                print(error_msg)
-                await send_websocket_message(
-                    websocket,
-                    TaskStatus.ERROR,
-                    "error",
-                    error_msg
-                )
+                logger.error(f"Sampling loop failed: {str(e)}")
         else:
             # If we get here, it means we've tried max_retries times and failed
-            error_msg = "Sampling loop failed after multiple retries"
-            print(error_msg)
+            logger.error("Sampling loop failed after multiple retries")
             await send_websocket_message(
                 websocket,
                 TaskStatus.ERROR,
                 "error",
-                error_msg
+                "Failed to process message"
             )
             return
 
@@ -162,7 +158,7 @@ async def process_message_and_save(
         new_messages = updated_messages[original_message_count:]
 
         if len(new_messages) == 0:
-            print("WARNING: No new messages to save!")
+            logger.warning("No new messages to save!")
             await send_websocket_message(
                 websocket,
                 TaskStatus.COMPLETED,
@@ -171,7 +167,7 @@ async def process_message_and_save(
             )
             return
 
-        print(f"AI processing complete. Generated {len(new_messages)}"
+        logger.info(f"AI processing complete. Generated {len(new_messages)}"
                 " new messages. Now saving to database...")
 
         # Now save the results using the same session manager (same DB session
@@ -179,29 +175,26 @@ async def process_message_and_save(
         saved_count = 0
         for i, msg in enumerate(new_messages):
             try:
-                print(f"Processing new message {i+1}/{len(new_messages)}: {msg.get('role')}")
+                logger.info(f"Processing new message {i+1}/{len(new_messages)}: {msg.get('role')}")
 
                 # Convert content to JSON string for storage
                 content_data = msg.get("content", [])
                 content_str = json.dumps(content_data) if content_data else ""
 
-                print(f"Saving message with role '{msg.get('role')}': {content_str[:100]}...")
+                logger.info(f"Saving message with role '{msg.get('role')}': {content_str[:100]}...")
                 saved_msg = await session_manager.add_message(
                     session_id=session_id,
                     role=msg.get("role", "assistant"),
                     content=content_str
                 )
-                print(f"Successfully saved message: {saved_msg.id}")
+                logger.info(f"Successfully saved message: {saved_msg.id}")
                 saved_count += 1
 
             except Exception as e:
-                print(f"Error saving message {i}: {e}")
-                import traceback
-                traceback.print_exc()
-                # Continue with other messages even if one fails
+                logger.error(f"Error saving message {i}: {e}")
                 continue
 
-        print(f"Database save complete. Saved {saved_count}/{len(new_messages)} messages.")
+        logger.info(f"Database save complete. Saved {saved_count}/{len(new_messages)} messages.")
 
         # Send completion signal
         await send_websocket_message(
@@ -212,15 +205,12 @@ async def process_message_and_save(
         )
 
     except Exception as e:
-        error_msg = f"Error processing message: {str(e)}"
-        print(error_msg)
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error processing message: {str(e)}")
         websocket = await connection_manager.get_connection(session_id)
         if websocket:
             await send_websocket_message(
                 websocket,
                 TaskStatus.ERROR,
                 "error",
-                error_msg,
+                "Failed to process message",
             )

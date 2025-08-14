@@ -1,10 +1,13 @@
 from typing import Optional, Sequence
+import logging
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from backend.base.repository import BaseRepository
 from backend.models.message import ChatMessage
+
+
+logger = logging.getLogger(__name__)
 
 
 class MessageRepository(BaseRepository[ChatMessage]):
@@ -57,11 +60,11 @@ class MessageRepository(BaseRepository[ChatMessage]):
             self.session.add(model)
             await self.session.commit()
             await self.session.refresh(model)
-            print(
+            logger.debug(
                 f"Created message in DB: {model.id} for session {model.session_id}")
             return model
         except Exception as e:
-            print(f"Error creating message: {e}")
+            logger.error(f"Error creating message: {e}")
             await self.session.rollback()
             raise
 

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
@@ -11,6 +12,7 @@ from backend.utils.convert import convert_to_anthropic_message
 from backend.schemas import session as session_schemas
 
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -88,31 +90,32 @@ async def send_message(
     connection_manager: RedisConnectionManager = Depends(get_connection_manager),
 ):
     """Send a message to a session"""
-    print(f"Received message for session {session_id}: {message}")
+    logger.info(f"Received message for session {session_id}: {message}")
 
     session = await session_manager.get_session(session_id)
     if session is None:
-        print(f"Session {session_id} not found")
+        logger.warning(f"Session {session_id} not found")
         return session_schemas.ErrorResponse(error="Session not found")
 
     # Check if session is connected
     if not await connection_manager.is_session_active(session_id):
+        logger.warning(f"Session {session_id} not connected")
         return session_schemas.ErrorResponse(error="Session not connected")
 
     try:
-        print(f"Adding user message to database...")
+        logger.debug(f"Adding user message to database...")
         saved_message = await session_manager.add_message(
             session_id=session_id,
             role="user",
             content=message["content"]
         )
-        print(f"User message saved successfully: {saved_message.id}")
+        logger.debug(f"User message saved successfully: {saved_message.id}")
 
         db_messages = await session_manager.get_session_messages(session_id)
         anthropic_messages = [
             convert_to_anthropic_message(msg) for msg in db_messages]
 
-        print(f"Starting background task to process message...")
+        logger.debug(f"Starting background task to process message...")
         asyncio.create_task(
             process_message_and_save(
                 session_id,
@@ -123,9 +126,7 @@ async def send_message(
         return session_schemas.SendMessageResponse(status="processing")
 
     except Exception as e:
-        print(f"Error in send_message: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Failed to process message: {str(e)}")
         return session_schemas.ErrorResponse(
             error=f"Failed to process message: {str(e)}")
 
@@ -138,16 +139,17 @@ async def websocket_endpoint(
 ):
     """WebSocket endpoint for real-time updates from the agent"""
     await websocket.accept()
+    logger.debug(f"Accepted WebSocket connection for session {session_id}")
     await connection_manager.add_connection(session_id, websocket)
 
     async def cleanup():
         """Cleanup function to remove connection and update session status"""
-        print(f"Cleaning up session {session_id}")
+        logger.debug(f"Cleaning up session {session_id}")
         try:
             await connection_manager.remove_connection(session_id)
             await session_manager.update_session_status(session_id, SessionStatus.INACTIVE)
         except Exception as e:
-            print(f"Error cleaning up session {session_id}: {e}")
+            logger.error(f"Error cleaning up session {session_id}: {e}")
 
     try:
         # Send connection confirmation
@@ -164,7 +166,7 @@ async def websocket_endpoint(
     except WebSocketDisconnect:
         await cleanup()
     except Exception as e:
-        print(f"WebSocket error for session {session_id}: {e}")
+        logger.error(f"WebSocket error for session {session_id}: {e}")
         await cleanup()
 
 

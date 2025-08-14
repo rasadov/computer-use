@@ -100,7 +100,7 @@ COPY --chown=$USERNAME:$USERNAME image/ $HOME
 COPY --chown=$USERNAME:$USERNAME computer_use_demo/ $HOME/computer_use_demo/
 
 # Copy application files AFTER image/ so they don't get overwritten
-COPY --chown=$USERNAME:$USERNAME app/ $HOME/app/
+COPY --chown=$USERNAME:$USERNAME backend/ $HOME/backend/
 COPY --chown=$USERNAME:$USERNAME frontend/ $HOME/frontend/
 
 # Copy the CUSTOM entrypoint LAST to override the original one

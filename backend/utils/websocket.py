@@ -1,6 +1,10 @@
 import json
+import logging
+
 from fastapi import WebSocket
 
+
+logger = logging.getLogger(__name__)
 
 async def send_websocket_message(
         websocket: WebSocket,
@@ -15,4 +19,4 @@ async def send_websocket_message(
             "content": content
         }))
     except Exception as e:
-        print(f"Error sending websocket message: {e}")
+        logger.error(f"Error sending websocket message: {e}")

@@ -1,6 +1,9 @@
+import logging
+import uuid
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
@@ -9,12 +12,16 @@ from backend.core.config import settings
 from backend.database.connection import engine, SessionLocal
 from backend.router.session_router import router as session_router
 from backend.services.connection_manager import connection_manager
+from backend.core.logger import setup_logging
 
+
+setup_logging(log_file="logs/app.log")
+
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
-    # Create engine ONCE
     app.state.engine = engine
     app.state.async_session = SessionLocal
     app.state.connection_manager = connection_manager
@@ -29,7 +36,35 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    """Add request tracking and structured logging"""
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
+    
+    extra = {
+        "custom_attrs": {
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "client_ip": request.client.host if request.client else None
+        }
+    }
+    
+    logger.info("Request started", extra=extra)
+    
+    response = await call_next(request)
+    
+    duration = time.time() - start_time
+    extra.get("custom_attrs", {}).update({
+        "status_code": response.status_code,
+        "duration_ms": round(duration * 1000, 2)
+    })
+    
+    logger.info("Request completed", extra=extra)
+    
+    return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

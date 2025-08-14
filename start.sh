@@ -25,7 +25,7 @@ python -c "import uvicorn; print(f'uvicorn version: {uvicorn.__version__}')" || 
 
 # Try using python -m uvicorn instead of direct uvicorn command
 echo "Starting FastAPI server..."
-exec python -m uvicorn app.main:app \
+exec python -m uvicorn backend.main:app \
     --host 0.0.0.0 \
     --port 8000 \
     --log-level info

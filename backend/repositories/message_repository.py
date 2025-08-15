@@ -24,6 +24,8 @@ class MessageRepository(BaseRepository[ChatMessage]):
             Optional[ChatMessage]: Message object or None if not found
         """
         result = await self.session.execute(select(ChatMessage).where(ChatMessage.id == id))
+        logger.debug(
+            f"Retrieved message from DB: {id}")
         return result.scalar_one_or_none()
 
     async def get_all(self) -> Sequence[ChatMessage]:
@@ -32,6 +34,8 @@ class MessageRepository(BaseRepository[ChatMessage]):
             Sequence[ChatMessage]: List of all messages
         """
         result = await self.session.execute(select(ChatMessage))
+        logger.debug(
+            f"Retrieved all messages from DB")
         return result.scalars().all()
 
     async def get_by_session_id(
@@ -47,6 +51,8 @@ class MessageRepository(BaseRepository[ChatMessage]):
             .where(ChatMessage.session_id == session_id)
             .order_by(ChatMessage.timestamp)
         )
+        logger.debug(
+            f"Retrieved all messages for session {session_id}")
         return result.scalars().all()
 
     async def create(self, model: ChatMessage) -> ChatMessage:
@@ -82,6 +88,8 @@ class MessageRepository(BaseRepository[ChatMessage]):
         for key, value in fields.items():
             setattr(message, key, value)
         await self.session.commit()
+        logger.debug(
+            f"Updated message in DB: {id}")
         return message
 
     async def delete(self, id: str) -> bool:
@@ -96,6 +104,8 @@ class MessageRepository(BaseRepository[ChatMessage]):
             raise ValueError(f"Message {id} not found")
         await self.session.delete(message)
         await self.session.commit()
+        logger.debug(
+            f"Deleted message in DB: {id}")
         return True
 
     async def create_batch(self, messages: Sequence[ChatMessage]) -> Sequence[ChatMessage]:

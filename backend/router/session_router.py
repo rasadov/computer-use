@@ -10,6 +10,8 @@ from backend.services.connection_manager import RedisConnectionManager
 from backend.services.session_manager import SessionManager
 from backend.utils.convert import convert_to_anthropic_message
 from backend.schemas import session as session_schemas
+from backend.schemas import message as message_schemas
+from backend.schemas import error as error_schemas
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +63,7 @@ async def get_session(
     """Get a session by id"""
     session = await session_manager.get_session(session_id)
     if session is None:
-        return session_schemas.ErrorResponse(error="Session not found")
+        return error_schemas.ErrorResponse(error="Session not found")
 
     messages = await session_manager.get_session_messages(session_id)
 
@@ -80,11 +82,11 @@ async def get_session(
 
 
 @router.post("/sessions/{session_id}/messages",
-             response_model=session_schemas.SendMessageResponse,
+             response_model=message_schemas.SendMessageResponse,
              tags=["Sessions"]
              )
 async def send_message(
-    payload: session_schemas.SendMessageRequest,
+    payload: message_schemas.SendMessageRequest,
     session_manager: SessionManager = Depends(get_session_manager),
     connection_manager: RedisConnectionManager = Depends(get_connection_manager),
     ai_processing_service: AIProcessingService = Depends(get_ai_processing_service),
@@ -95,12 +97,12 @@ async def send_message(
     session = await session_manager.get_session(payload.session_id)
     if session is None:
         logger.warning(f"Session {payload.session_id} not found")
-        return session_schemas.ErrorResponse(error="Session not found")
+        return error_schemas.ErrorResponse(error="Session not found")
 
     # Check if session is connected
     if not await connection_manager.is_session_active(payload.session_id):
         logger.warning(f"Session {payload.session_id} not connected")
-        return session_schemas.ErrorResponse(error="Session not connected")
+        return error_schemas.ErrorResponse(error="Session not connected")
 
     try:
         logger.debug(f"Adding user message to database...")
@@ -122,11 +124,11 @@ async def send_message(
                 anthropic_messages,
             ))
 
-        return session_schemas.SendMessageResponse(status="processing")
+        return message_schemas.SendMessageResponse(status="processing")
 
     except Exception as e:
         logger.error(f"Failed to process message: {str(e)}")
-        return session_schemas.ErrorResponse(
+        return error_schemas.ErrorResponse(
             error=f"Failed to process message: {str(e)}")
 
 

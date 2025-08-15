@@ -18,6 +18,12 @@ class RedisConnectionManager:
         # Keep local connections for actual WebSocket objects
         self.local_connections: Dict[str, WebSocket] = {}
 
+    async def ping(self):
+        """Ping Redis connection"""
+        if not self.redis_client:
+            await self.connect()
+        return await self.redis_client.ping() # type: ignore
+
     async def connect(self):
         """Initialize Redis connection"""
         if not self.redis_client:

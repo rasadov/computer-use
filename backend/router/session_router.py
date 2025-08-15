@@ -169,28 +169,3 @@ async def websocket_endpoint(
     except Exception as e:
         logger.error(f"WebSocket error for session {session_id}: {e}")
         await cleanup()
-
-
-@router.get("/sessions/health/redis",
-            response_model=session_schemas.RedisHealthResponse,
-            tags=["Sessions"]
-            )
-async def redis_health(
-    connection_manager: RedisConnectionManager = Depends(get_connection_manager)
-):
-    """Check Redis health"""
-    try:
-        active_sessions = await connection_manager.get_active_sessions()
-        return session_schemas.RedisHealthResponse(
-            status="healthy",
-            active_sessions=len(active_sessions),
-            sessions=list(active_sessions.keys()),
-            error=None
-        )
-    except Exception as e:
-        return session_schemas.RedisHealthResponse(
-            status="unhealthy",
-            active_sessions=None,
-            sessions=None,
-            error=str(e)
-        )

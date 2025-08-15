@@ -9,10 +9,11 @@ from starlette.staticfiles import StaticFiles
 
 
 from backend.core.config import settings
-from backend.database.connection import engine, SessionLocal
-from backend.router.session_router import router as session_router
-from backend.services.connection_manager import connection_manager
 from backend.core.logger import setup_logging
+from backend.database.connection import engine, SessionLocal
+from backend.services.connection_manager import connection_manager
+from backend.router.session_router import router as session_router
+from backend.router.health_router import router as health_router
 
 
 setup_logging(log_file="logs/app.log")
@@ -73,6 +74,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(health_router, prefix=settings.API_V1_STR)
 app.include_router(session_router, prefix=settings.API_V1_STR)
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="static")

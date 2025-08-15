@@ -1,5 +1,5 @@
+from typing import List
 from datetime import datetime
-from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -31,13 +31,3 @@ class GetSessionResponse(BaseModel):
                                  description="When the session was created")
     messages: List[MessageInfo] = Field(...,
                                         description="All messages in the session")
-
-
-class RedisHealthResponse(BaseModel):
-    status: str = Field(..., description="Health status (healthy/unhealthy)")
-    active_sessions: Optional[int] = Field(
-        None, description="Number of active sessions")
-    sessions: Optional[List[str]] = Field(
-        None, description="List of active session IDs")
-    error: Optional[str] = Field(
-        None, description="Error message if unhealthy")

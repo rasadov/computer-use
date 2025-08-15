@@ -2,7 +2,7 @@ import unittest
 import logging
 import os
 import sys
-import json
+import orjson
 import datetime as dt
 import tempfile
 import shutil
@@ -56,7 +56,7 @@ class TestLogger(unittest.TestCase):
             exc_info=None,
         )
         output = formatter.format(record)
-        parsed = json.loads(output)
+        parsed = orjson.loads(output)
         self.assertEqual(parsed["level"], "INFO")
         self.assertEqual(parsed["logger"], "test")
         self.assertEqual(parsed["message"], "Test message")
@@ -80,7 +80,7 @@ class TestLogger(unittest.TestCase):
         )
         record.custom_attrs = {"custom_attr": "custom_value"}
         output = formatter.format(record)
-        parsed = json.loads(output)
+        parsed = orjson.loads(output)
         self.assertEqual(parsed["custom_attr"], "custom_value")
         
     def test_my_json_formatter_with_exception(self):
@@ -101,7 +101,7 @@ class TestLogger(unittest.TestCase):
                 exc_info=sys.exc_info(),
             )
         output = formatter.format(record)
-        parsed = json.loads(output)
+        parsed = orjson.loads(output)
         self.assertIn("exc_info", parsed)
         self.assertIn("ValueError: Test error", parsed["exc_info"])
 
@@ -168,7 +168,7 @@ class TestLogger(unittest.TestCase):
         # Verify file handler writes logs
         logger.info("Test log")
         with open(self.log_file, "r") as f:
-            log_entry = json.load(f)
+            log_entry = orjson.loads(f.read())
             self.assertEqual(log_entry["message"], "Test log")
 
     def test_setup_logging_uvicorn(self):

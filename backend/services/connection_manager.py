@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 class RedisConnectionManager:
+    """Manager for WebSocket connections
+    
+    This class is responsible for managing WebSocket connections
+    and tracking active sessions.
+    """
     def __init__(self):
         self.redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         self.redis_client: Optional[redis.Redis] = None

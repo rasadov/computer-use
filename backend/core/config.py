@@ -2,9 +2,6 @@ import os
 
 from pydantic_settings import BaseSettings
 
-from computer_use_demo.tools.groups import ToolVersion
-from computer_use_demo.loop import APIProvider
-
 
 class Settings(BaseSettings):
     APP_NAME: str = "Computer Use Backend"
@@ -19,11 +16,6 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str
 
     ANTHROPIC_API_KEY: str
-
-    API_PROVIDER: APIProvider = APIProvider.ANTHROPIC
-    MODEL_NAME: str = "claude-sonnet-4-20250514"
-    MAX_TOKENS: int = 1024 * 8
-    TOOL_VERSION: ToolVersion = "computer_use_20250124"
 
     @property
     def DATABASE_URL(self):

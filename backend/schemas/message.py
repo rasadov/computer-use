@@ -20,4 +20,3 @@ class SendMessageRequest(BaseModel):
     max_tokens: int = Field(default=4096, description="Max tokens")
     thinking_budget: int | None = Field(default=None, description="Thinking budget")
     max_retries: int = Field(default=3, description="Max retries")
-

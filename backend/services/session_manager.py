@@ -16,7 +16,6 @@ class SessionManager(BaseSessionManager):
     """
     Implementation of SessionManager using SQLAlchemy
     """
-
     def __init__(self, session_repository: SessionRepository,
                  message_repository: MessageRepository):
         self.session_repository = session_repository

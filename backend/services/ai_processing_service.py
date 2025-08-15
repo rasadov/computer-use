@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class AIProcessingService:
+    """Service for processing AI messages"""
     def __init__(
             self,
             connection_manager: RedisConnectionManager,

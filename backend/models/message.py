@@ -1,10 +1,8 @@
 from typing import TYPE_CHECKING
 from datetime import datetime
 
-from sqlalchemy import String, DateTime, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.orm import relationship
-from sqlalchemy import JSON
+from sqlalchemy import String, DateTime, ForeignKey, JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.base.models import CustomBase
 if TYPE_CHECKING:

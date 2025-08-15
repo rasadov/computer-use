@@ -1,9 +1,18 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from fastapi import (
+    APIRouter,
+    WebSocket,
+    WebSocketDisconnect,
+    Depends
+)
 
-from backend.core.dependencies import get_session_manager, get_connection_manager, get_ai_processing_service
+from backend.core.dependencies import (
+    get_session_manager,
+    get_connection_manager,
+    get_ai_processing_service
+)
 from backend.models.enums import SessionStatus
 from backend.services.ai_processing_service import AIProcessingService
 from backend.services.connection_manager import RedisConnectionManager

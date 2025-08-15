@@ -2,9 +2,10 @@ import datetime as dt
 import logging
 import os
 import sys
+from typing_extensions import override
+
 import orjson
 from concurrent_log_handler import ConcurrentRotatingFileHandler
-from typing_extensions import override
 
 
 LOG_RECORD_BUILTIN_ATTRS = {

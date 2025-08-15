@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 
 from anthropic.types.beta import BetaContentBlockParam

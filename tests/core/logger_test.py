@@ -1,14 +1,15 @@
-import unittest
 import logging
 import os
 import sys
-import orjson
-import datetime as dt
 import tempfile
+import datetime as dt
 import shutil
-from unittest.mock import patch
-from io import StringIO
 import time
+from io import StringIO
+from unittest import TestCase, main
+from unittest.mock import patch
+
+import orjson
 
 from backend.core.logger import (
     MyJSONFormatter,
@@ -19,7 +20,8 @@ from backend.core.logger import (
     setup_logging,
 )
 
-class TestLogger(unittest.TestCase):
+
+class TestLogger(TestCase):
     def setUp(self):
         # Create a temporary directory for log files
         self.temp_dir = tempfile.mkdtemp()
@@ -195,4 +197,4 @@ class TestLogger(unittest.TestCase):
         self.assertLess(duration, 2.0, f"Logging {n_logs} messages took too long: {duration:.2f} seconds")
 
 if __name__ == "__main__":
-    unittest.main()
+    main()

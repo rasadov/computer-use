@@ -1,6 +1,7 @@
+import orjson
+
 from backend.models.message import ChatMessage
 from anthropic.types.beta import BetaMessageParam, BetaTextBlockParam
-import json
 
 
 def convert_to_anthropic_message(
@@ -8,12 +9,12 @@ def convert_to_anthropic_message(
     """Convert database message to Anthropic API format"""
     if isinstance(db_message.content, str):
         try:
-            content_data = json.loads(db_message.content)
+            content_data = orjson.loads(db_message.content)
             return {
                 "role": db_message.role,
                 "content": content_data
             }
-        except (json.JSONDecodeError, TypeError):
+        except (orjson.JSONDecodeError, TypeError):
             return {
                 "role": db_message.role,
                 "content": [

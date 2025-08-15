@@ -97,3 +97,25 @@ class MessageRepository(BaseRepository[ChatMessage]):
         await self.session.delete(message)
         await self.session.commit()
         return True
+
+    async def create_batch(self, messages: Sequence[ChatMessage]) -> Sequence[ChatMessage]:
+        """Create multiple messages in a single transaction
+        Args:
+            messages (Sequence[ChatMessage]): List of message objects to create
+        Returns:
+            Sequence[ChatMessage]: List of created message objects
+        """
+        try:
+            self.session.add_all(messages)
+            await self.session.commit()
+            
+            # Refresh all objects to get their IDs and updated fields
+            for message in messages:
+                await self.session.refresh(message)
+            
+            logger.debug(f"Created {len(messages)} messages in batch")
+            return messages
+        except Exception as e:
+            logger.error(f"Error creating messages batch: {e}")
+            await self.session.rollback()
+            raise

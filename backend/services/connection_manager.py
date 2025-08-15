@@ -1,6 +1,6 @@
 import logging
 import os
-import json
+import orjson
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -40,10 +40,10 @@ class RedisConnectionManager:
         await self.redis_client.hset( # type: ignore
             "active_sessions",
             session_id,
-            json.dumps({
+            orjson.dumps({
                 "connected_at": str(datetime.now()),
                 "status": "connected"
-            })
+            }).decode("utf-8")
         )
 
         logger.info(f"Added connection for session {session_id}")
@@ -78,8 +78,8 @@ class RedisConnectionManager:
         result = {}
         for session_id, data_str in sessions_data.items():
             try:
-                result[session_id] = json.loads(data_str)
-            except json.JSONDecodeError:
+                result[session_id] = orjson.loads(data_str)
+            except orjson.JSONDecodeError:
                 logger.warning(f"Invalid JSON for session {session_id}")
                 continue
 
@@ -96,10 +96,10 @@ class RedisConnectionManager:
             return False
 
         try:
-            await websocket.send_text(json.dumps({
+            await websocket.send_text(orjson.dumps({
                 "type": message_type,
                 "content": content
-            }))
+            }).decode("utf-8"))
             return True
         except Exception as e:
             logger.error(f"Error sending message to {session_id}: {e}")

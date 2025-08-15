@@ -8,7 +8,7 @@ from backend.repositories.message_repository import MessageRepository
 from backend.repositories.session_repository import SessionRepository
 from backend.services.connection_manager import RedisConnectionManager
 from backend.services.session_manager import SessionManager
-
+from backend.services.ai_processing_service import AIProcessingService
 
 logger = getLogger(__name__)
 
@@ -43,5 +43,14 @@ async def get_session_manager(
         messages_repository,
     )
 
-def get_connection_manager(request: Request) -> RedisConnectionManager:
+async def get_connection_manager(request: Request) -> RedisConnectionManager:
     return request.app.state.connection_manager
+
+async def get_ai_processing_service(
+    session_manager: SessionManager = Depends(get_session_manager),
+    connection_manager: RedisConnectionManager = Depends(get_connection_manager),
+) -> AIProcessingService:
+    return AIProcessingService(
+        connection_manager,
+        session_manager,
+    )

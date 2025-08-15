@@ -3,9 +3,9 @@ import logging
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
-from backend.core.dependencies import get_session_manager, get_connection_manager
+from backend.core.dependencies import get_session_manager, get_connection_manager, get_ai_processing_service
 from backend.models.enums import SessionStatus
-from backend.services.ai_processing_service import process_message_and_save
+from backend.services.ai_processing_service import AIProcessingService
 from backend.services.connection_manager import RedisConnectionManager
 from backend.services.session_manager import SessionManager
 from backend.utils.convert import convert_to_anthropic_message
@@ -84,44 +84,43 @@ async def get_session(
              tags=["Sessions"]
              )
 async def send_message(
-    session_id: str,
-    message: dict,
+    payload: session_schemas.SendMessageRequest,
     session_manager: SessionManager = Depends(get_session_manager),
     connection_manager: RedisConnectionManager = Depends(get_connection_manager),
+    ai_processing_service: AIProcessingService = Depends(get_ai_processing_service),
 ):
     """Send a message to a session"""
-    logger.info(f"Received message for session {session_id}: {message}")
+    logger.info(f"Received message for session {payload.session_id}: {payload.content}")
 
-    session = await session_manager.get_session(session_id)
+    session = await session_manager.get_session(payload.session_id)
     if session is None:
-        logger.warning(f"Session {session_id} not found")
+        logger.warning(f"Session {payload.session_id} not found")
         return session_schemas.ErrorResponse(error="Session not found")
 
     # Check if session is connected
-    if not await connection_manager.is_session_active(session_id):
-        logger.warning(f"Session {session_id} not connected")
+    if not await connection_manager.is_session_active(payload.session_id):
+        logger.warning(f"Session {payload.session_id} not connected")
         return session_schemas.ErrorResponse(error="Session not connected")
 
     try:
         logger.debug(f"Adding user message to database...")
         saved_message = await session_manager.add_message(
-            session_id=session_id,
+            session_id=payload.session_id,
             role="user",
-            content=message["content"]
+            content=payload.content
         )
         logger.debug(f"User message saved successfully: {saved_message.id}")
 
-        db_messages = await session_manager.get_session_messages(session_id)
+        db_messages = await session_manager.get_session_messages(payload.session_id)
         anthropic_messages = [
             convert_to_anthropic_message(msg) for msg in db_messages]
 
         logger.debug(f"Starting background task to process message...")
         asyncio.create_task(
-            process_message_and_save(
-                session_id,
-                connection_manager,
+            ai_processing_service.process_message_and_save(
+                payload.session_id,
                 anthropic_messages,
-                session_manager))
+            ))
 
         return session_schemas.SendMessageResponse(status="processing")
 

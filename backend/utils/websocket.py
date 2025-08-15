@@ -6,13 +6,17 @@ from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
+
 async def send_websocket_message(
-        websocket: WebSocket,
+        websocket: WebSocket | None,
         task_status: str,
         message_type: str,
         content):
     """Safely send a message via websocket"""
     try:
+        if not websocket:
+            logger.warning("No websocket connection")
+            return
         await websocket.send_text(json.dumps({
             "type": message_type,
             "task_status": task_status,

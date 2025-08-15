@@ -1,32 +1,40 @@
-import os
-
-from pydantic_settings import BaseSettings
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import computed_field
 
 
 class Settings(BaseSettings):
+    # App metadata
     APP_NAME: str = "Computer Use Backend"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
 
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
-    POSTGRES_PORT: str
+    # Database settings
+    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_USER: str = "user"
+    POSTGRES_PASSWORD: str = "password"
+    POSTGRES_DB: str = "computer_use"
+    POSTGRES_PORT: int = 5432
 
-    ANTHROPIC_API_KEY: str
+    # External services
+    ANTHROPIC_API_KEY: str = ""
 
+    # Automatically computed DB URL
+    @computed_field(return_type=str)
     @property
-    def DATABASE_URL(self):
-        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    def DATABASE_URL(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).resolve().parent / ".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",  # ignore unknown env vars
+    )
 
 
-settings = Settings(
-    POSTGRES_SERVER=os.getenv("POSTGRES_SERVER") or "localhost",
-    POSTGRES_USER=os.getenv("POSTGRES_USER") or "user",
-    POSTGRES_PASSWORD=os.getenv("POSTGRES_PASSWORD") or "password",
-    POSTGRES_DB=os.getenv("POSTGRES_DB") or "computer_use",
-    POSTGRES_PORT=os.getenv("POSTGRES_PORT") or "5432",
-    ANTHROPIC_API_KEY=os.getenv("ANTHROPIC_API_KEY") or "",
-)
+settings = Settings()

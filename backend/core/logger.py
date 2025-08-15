@@ -35,7 +35,6 @@ class MyJSONFormatter(logging.Formatter):
             always_fields["exc_info"] = self.formatException(record.exc_info)
         if record.stack_info is not None:
             always_fields["stack_info"] = self.formatStack(record.stack_info)
-
         message = {
             key: always_fields.pop(val, getattr(record, val))
             for key, val in self.fmt_keys.items()
@@ -45,6 +44,56 @@ class MyJSONFormatter(logging.Formatter):
         custom_attrs = getattr(record, "custom_attrs", {})
         message.update(custom_attrs)
         return message
+
+
+class StandardTextFormatter(logging.Formatter):
+    """A formatter that outputs human-readable text instead of JSON."""
+    
+    def __init__(self, *, include_timestamp: bool = True, include_logger: bool = True):
+        super().__init__()
+        self.include_timestamp = include_timestamp
+        self.include_logger = include_logger
+
+    @override
+    def format(self, record: logging.LogRecord) -> str:
+        # Build the log message parts
+        parts = []
+        
+        # Add timestamp if requested
+        if self.include_timestamp:
+            timestamp = dt.datetime.fromtimestamp(record.created, tz=dt.timezone.utc)
+            parts.append(timestamp.strftime("%Y-%m-%d %H:%M:%S UTC"))
+        
+        # Add level name with color/formatting
+        level_str = f"[{record.levelname}]"
+        parts.append(level_str)
+        
+        # Add logger name if requested
+        if self.include_logger and record.name != "root":
+            parts.append(f"{record.name}")
+        
+        # Add the actual message
+        message = record.getMessage()
+        
+        # Combine parts with the message
+        prefix = " ".join(parts)
+        log_line = f"{prefix}: {message}"
+        
+        # Add exception info if present
+        if record.exc_info:
+            log_line += "\n" + self.formatException(record.exc_info)
+        
+        # Add stack info if present
+        if record.stack_info:
+            log_line += "\n" + self.formatStack(record.stack_info)
+        
+        # Add custom attributes if present
+        custom_attrs = getattr(record, "custom_attrs", {})
+        if custom_attrs:
+            attrs_str = " ".join(f"{k}={v}" for k, v in custom_attrs.items())
+            log_line += f" [{attrs_str}]"
+        
+        return log_line
 
 
 class NonErrorFilter(logging.Filter):
@@ -61,22 +110,23 @@ def _ensure_logs_dir(path: str) -> None:
     except OSError as e:
         logging.getLogger().warning(f"Failed to create log directory: {e}")
 
-
 def _build_console_handler(level: int) -> logging.StreamHandler:
+    """Build console handler with standard text formatting."""
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(level)
-    handler.setFormatter(MyJSONFormatter(fmt_keys={"level": "levelname", "logger": "name"}))
+    # Use standard text formatter for console output
+    handler.setFormatter(StandardTextFormatter(include_timestamp=True, include_logger=True))
     return handler
 
-
 def _build_file_handler(path: str, level: int) -> logging.Handler:
+    """Build file handler with JSON formatting (good for log processing)."""
     _ensure_logs_dir(path)
     # Use ConcurrentRotatingFileHandler for thread-safe async writes
     fh = ConcurrentRotatingFileHandler(path, maxBytes=10_000_000, backupCount=5)
     fh.setLevel(level)
+    # Keep JSON format for file logging (useful for log analysis tools)
     fh.setFormatter(MyJSONFormatter(fmt_keys={"level": "levelname", "logger": "name"}))
     return fh
-
 
 def setup_logging(*, level: int | None = None, log_file: str | None = None) -> None:
     if level is None:
@@ -89,6 +139,7 @@ def setup_logging(*, level: int | None = None, log_file: str | None = None) -> N
 
     root.setLevel(level)
     root.addHandler(_build_console_handler(level))
+
     if log_file:
         try:
             root.addHandler(_build_file_handler(log_file, level))

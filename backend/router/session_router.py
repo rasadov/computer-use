@@ -11,7 +11,9 @@ from fastapi import (
 from backend.core.dependencies import (
     get_session_manager,
     get_connection_manager,
-    get_ai_processing_service
+    get_ai_processing_service,
+    get_session_manager_websocket,
+    get_connection_manager_websocket
 )
 from backend.models.enums import SessionStatus
 from backend.services.ai_processing_service import AIProcessingService
@@ -143,9 +145,10 @@ async def send_message(
 
 @router.websocket("/sessions/{session_id}/ws")
 async def websocket_endpoint(
-    websocket: WebSocket, session_id: str,
-    session_manager: SessionManager = Depends(get_session_manager),
-    connection_manager: RedisConnectionManager = Depends(get_connection_manager),
+    websocket: WebSocket,
+    session_id: str,
+    session_manager: SessionManager = Depends(get_session_manager_websocket),
+    connection_manager: RedisConnectionManager = Depends(get_connection_manager_websocket),
 ):
     """WebSocket endpoint for real-time updates from the agent"""
     await websocket.accept()

@@ -12,7 +12,7 @@ class SendMessageResponse(BaseModel):
 class SendMessageRequest(BaseModel):
     session_id: str = Field(..., description="Session ID")
     content: str = Field(..., description="Message content")
-    model: LLMModel = Field(default=LLMModel.CLAUDE_OPUS_4_1, description="LLM model")
+    model: LLMModel = Field(default=LLMModel.CLAUDE_SONNET_4, description="LLM model")
     api_provider: APIProvider = Field(default=APIProvider.ANTHROPIC, description="API provider")
     api_key: str = Field(description="API key", default=settings.ANTHROPIC_API_KEY)
     system_prompt_suffix: str = Field(default="", description="System prompt suffix")

@@ -6,7 +6,7 @@ from fastapi import WebSocket
 from httpx import Request, Response
 import orjson
 
-from backend.models.enums import LLMModel, ToolVersion
+from backend.models.enums import LLMModel, Sender, ToolVersion
 from backend.services.connection_manager import RedisConnectionManager
 from backend.core.config import settings
 from backend.services.session_manager import SessionManager
@@ -169,6 +169,7 @@ class AIProcessingService:
             new_messages = updated_messages[original_message_count:]
 
             if len(new_messages) == 0:
+                logger.info(f"Previous messages: {updated_messages}")
                 logger.warning("No new messages to save!")
                 await send_websocket_message(
                     websocket,
@@ -206,7 +207,7 @@ class AIProcessingService:
                         
                         await self.session_manager.add_message(
                             session_id=session_id,
-                            role=msg.get("role", "assistant"),
+                            role=Sender.BOT if msg.get("role") == "assistant" else Sender.TOOL,
                             content=content_json
                         )
                         saved_count += 1

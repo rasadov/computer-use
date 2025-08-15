@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
+from backend.models.enums import Sender
 from backend.models.session import SessionDB
 from backend.models.message import ChatMessage
 from backend.repositories.session_repository import SessionRepository
@@ -36,7 +37,7 @@ class BaseSessionManager(ABC):
     async def add_message(
             self,
             session_id: str,
-            role: str,
+            role: Sender,
             content: str) -> ChatMessage:
         """Add a message to a session"""
         pass

@@ -197,7 +197,7 @@ const ComputerUseInterface = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           session_id: currentSession,
-          content: messageInput,
+          message: messageInput,
           ...config
         })
       });

@@ -15,7 +15,7 @@ from backend.core.dependencies import (
     get_session_manager_websocket,
     get_connection_manager_websocket
 )
-from backend.models.enums import SessionStatus
+from backend.models.enums import SessionStatus, Sender
 from backend.services.ai_processing_service import AIProcessingService
 from backend.services.connection_manager import RedisConnectionManager
 from backend.services.session_manager import SessionManager
@@ -103,7 +103,7 @@ async def send_message(
     ai_processing_service: AIProcessingService = Depends(get_ai_processing_service),
 ):
     """Send a message to a session"""
-    logger.info(f"Received message for session {payload.session_id}: {payload.content}")
+    logger.info(f"Received message for session {payload.session_id}: {payload.message}")
 
     session = await session_manager.get_session(payload.session_id)
     if session is None:
@@ -117,10 +117,9 @@ async def send_message(
 
     try:
         logger.debug(f"Adding user message to database...")
-        saved_message = await session_manager.add_message(
+        saved_message = await session_manager.add_user_message(
             session_id=payload.session_id,
-            role="user",
-            content=payload.content
+            message=payload.message
         )
         logger.debug(f"User message saved successfully: {saved_message.id}")
 
@@ -129,6 +128,7 @@ async def send_message(
             convert_to_anthropic_message(msg) for msg in db_messages]
 
         logger.debug(f"Starting background task to process message...")
+        logger.info(f"anthropic messages: {anthropic_messages}")
         asyncio.create_task(
             ai_processing_service.process_message_and_save(
                 payload.session_id,
@@ -153,6 +153,7 @@ async def websocket_endpoint(
     """WebSocket endpoint for real-time updates from the agent"""
     await websocket.accept()
     logger.debug(f"Accepted WebSocket connection for session {session_id}")
+    await session_manager.update_session_status(session_id, SessionStatus.ACTIVE)
     await connection_manager.add_connection(session_id, websocket)
 
     async def cleanup():

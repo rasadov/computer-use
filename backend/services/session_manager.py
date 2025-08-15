@@ -7,7 +7,7 @@ import orjson
 from backend.base.session_mager import BaseSessionManager
 from backend.models.session import SessionDB
 from backend.models.message import ChatMessage
-from backend.models.enums import SessionStatus
+from backend.models.enums import SessionStatus, Sender
 from backend.repositories.session_repository import SessionRepository
 from backend.repositories.message_repository import MessageRepository
 
@@ -41,10 +41,28 @@ class SessionManager(BaseSessionManager):
         """Get all messages for a session"""
         return await self.message_repository.get_by_session_id(session_id)
 
+    async def add_user_message(
+        self,
+        session_id: str,
+        message: str,
+    ) -> ChatMessage:
+        message_content = orjson.dumps([
+            {
+                'type': 'text',
+                'text': message
+            }
+        ]).decode("utf-8")
+
+        return await self.add_message(
+            session_id=session_id,
+            role=Sender.USER,
+            content=message_content
+        )
+
     async def add_message(
             self,
             session_id: str,
-            role: str,
+            role: Sender,
             content: str) -> ChatMessage:
         """Add a single message to the session"""
         message = ChatMessage(
@@ -85,7 +103,7 @@ class SessionManager(BaseSessionManager):
                     raise ValueError(f"Message {i} is not a valid dict-like object")
                 
                 # Extract and validate role
-                role = msg.get("role", "assistant")
+                role = Sender.BOT if msg.get("role") == "assistant" else Sender.TOOL
                 if not isinstance(role, str) or not role.strip():
                     raise ValueError(f"Message {i} has invalid role: {role}")
                 

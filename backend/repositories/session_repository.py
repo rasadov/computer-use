@@ -28,6 +28,7 @@ class SessionRepository(BaseRepository[SessionDB]):
         """
         self.session.add(model)
         await self.session.commit()
+        await self.session.refresh(model)
         logger.debug(
             f"Created session in DB: {model.id}")
         return model
@@ -46,6 +47,7 @@ class SessionRepository(BaseRepository[SessionDB]):
         for key, value in fields.items():
             setattr(session, key, value)
         await self.session.commit()
+        await self.session.refresh(session)
         logger.debug(
             f"Updated session in DB: {id}")
         return session

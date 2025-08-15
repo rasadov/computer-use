@@ -10,9 +10,17 @@ def convert_to_anthropic_message(
     if isinstance(db_message.content, str):
         try:
             content_data = orjson.loads(db_message.content)
+            # Ensure content is always a list
+            if isinstance(content_data, list):
+                content = content_data
+            elif isinstance(content_data, dict):
+                content = [content_data]
+            else:
+                content = [{"type": "text", "text": str(content_data)}]
+            
             return {
                 "role": db_message.role,
-                "content": content_data
+                "content": content
             }
         except (orjson.JSONDecodeError, TypeError):
             return {

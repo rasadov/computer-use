@@ -40,14 +40,14 @@ class AIProcessingService:
         session_id: str,
         anthropic_messages: list,
         *,
-        model: LLMModel = LLMModel.CLAUDE_OPUS_4_1,
-        api_provider: APIProvider = APIProvider.ANTHROPIC,
-        api_key: str = settings.ANTHROPIC_API_KEY,
-        system_prompt_suffix: str = "",
-        tool_version: ToolVersion = ToolVersion.COMPUTER_USE_2025_01,
-        max_tokens: int = 4096,
-        thinking_budget: int | None = None,
-        max_retries: int = 3,
+        model: LLMModel,
+        api_provider: APIProvider,
+        api_key: str,
+        system_prompt_suffix: str,
+        tool_version: ToolVersion,
+        max_tokens: int,
+        thinking_budget: int | None,
+        max_retries: int,
     ):
         """Process message with AI and save results to database"""
         try:
@@ -126,6 +126,12 @@ class AIProcessingService:
             )
 
             updated_messages = []
+
+            logger.info("Starting sampling loop with following parameters:"
+                        f"model={model}, provider={api_provider},"
+                        f"system_prompt_suffix={system_prompt_suffix},"
+                        f"tool_version={tool_version}, max_tokens={max_tokens},"
+                        f"thinking_budget={thinking_budget}")
 
             # Try up to max_retries times
             for i in range(max_retries):

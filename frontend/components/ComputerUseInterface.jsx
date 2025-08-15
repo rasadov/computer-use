@@ -30,7 +30,7 @@ const ComputerUseInterface = () => {
 
   // Configuration state
   const [config, setConfig] = useState({
-    model: 'claude-opus-4-1-20250805',
+    model: 'claude-sonnet-4-20250514',
     apiProvider: 'anthropic',
     maxTokens: 4096,
     thinkingBudget: null,
@@ -360,11 +360,11 @@ const ComputerUseInterface = () => {
                     onChange={(e) => setConfig(prev => ({ ...prev, model: e.target.value }))}
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm"
                   >
+                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
                     <option value="claude-opus-4-1-20250805">Claude Opus 4.1</option>
                     <option value="claude-opus-4-20250514">Claude Opus 4</option>
-                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
                     <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
-                    <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                    <option value="claude-3-5-haiku-latest">Claude 3.5 Haiku</option>
                   </select>
                 </div>
 
@@ -438,7 +438,7 @@ const ComputerUseInterface = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-12rem)]">
+            <div className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-14rem)]">
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 mt-8">
                   <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />

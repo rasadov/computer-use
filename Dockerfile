@@ -48,6 +48,7 @@ RUN apt-get update && \
     xpaint \
     tint2 \
     galculator \
+    websockify \
     pcmanfm \
     unzip && \
     apt-get clean

@@ -1,14 +1,14 @@
 #!/bin/bash
-echo "starting noVNC"
+echo "starting noVNC with websockify"
 
-# Start noVNC with explicit websocket settings
-/opt/noVNC/utils/novnc_proxy \
-    --vnc localhost:5900 \
-    --listen 6080 \
+# Start websockify as the WebSocket proxy
+websockify \
     --web /opt/noVNC \
-    > /tmp/novnc.log 2>&1 &
+    6080 \
+    localhost:5900 \
+    > /tmp/websockify.log 2>&1 &
 
-# Wait for noVNC to start
+# Wait for websockify to start
 timeout=10
 while [ $timeout -gt 0 ]; do
     if netstat -tuln | grep -q ":6080 "; then
@@ -18,4 +18,10 @@ while [ $timeout -gt 0 ]; do
     ((timeout--))
 done
 
-echo "noVNC started successfully"
+if [ $timeout -eq 0 ]; then
+    echo "websockify failed to start, log output:" >&2
+    cat /tmp/websockify.log >&2
+    exit 1
+fi
+
+echo "websockify started successfully"

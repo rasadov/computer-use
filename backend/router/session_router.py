@@ -133,6 +133,14 @@ async def send_message(
             ai_processing_service.process_message_and_save(
                 payload.session_id,
                 anthropic_messages,
+                model=payload.model,
+                api_provider=payload.api_provider,
+                api_key=payload.api_key,
+                system_prompt_suffix=payload.system_prompt_suffix,
+                tool_version=payload.tool_version,
+                max_tokens=payload.max_tokens,
+                thinking_budget=payload.thinking_budget,
+                max_retries=payload.max_retries,
             ))
 
         return message_schemas.SendMessageResponse(status="processing")

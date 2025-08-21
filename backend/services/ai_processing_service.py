@@ -6,9 +6,9 @@ from fastapi import WebSocket
 from httpx import Request, Response
 import orjson
 
+from backend.base.decorators import singleton
 from backend.models.enums import LLMModel, Sender, ToolVersion
 from backend.services.connection_manager import RedisConnectionManager
-from backend.core.config import settings
 from backend.services.session_manager import SessionManager
 from backend.models.enums import TaskStatus
 from backend.utils.websocket import send_websocket_message
@@ -19,6 +19,7 @@ from computer_use_demo.tools.base import ToolResult
 logger = logging.getLogger(__name__)
 
 
+@singleton
 class AIProcessingService:
     """Service for processing AI messages"""
     def __init__(

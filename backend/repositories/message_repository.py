@@ -5,11 +5,13 @@ from sqlalchemy import select
 
 from backend.base.repository import BaseRepository
 from backend.models.message import ChatMessage
+from backend.base.decorators import singleton
 
 
 logger = logging.getLogger(__name__)
 
 
+@singleton
 class MessageRepository(BaseRepository[ChatMessage]):
     """
     MessageRepository - implements method to get, add, update or delete messages from database

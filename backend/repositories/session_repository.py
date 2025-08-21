@@ -5,12 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
 from backend.base.repository import BaseRepository
+from backend.base.decorators import singleton
 from backend.models.session import SessionDB
 
 
 logger = logging.getLogger(__name__)
 
 
+@singleton
 class SessionRepository(BaseRepository[SessionDB]):
     """
     SessionRepository - implements method to get, add, update or delete sessions from database

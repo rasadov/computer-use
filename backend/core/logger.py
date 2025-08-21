@@ -118,17 +118,25 @@ def _build_console_handler(level: int) -> logging.StreamHandler:
     handler.setFormatter(StandardTextFormatter(include_timestamp=True, include_logger=True))
     return handler
 
-def _build_file_handler(path: str, level: int) -> logging.Handler:
+def _build_file_handler(path: str, level: int, max_bytes: int, backup_count: int) -> logging.Handler:
     """Build file handler with JSON formatting (good for log processing)."""
     _ensure_logs_dir(path)
     # Use ConcurrentRotatingFileHandler for thread-safe async writes
-    fh = ConcurrentRotatingFileHandler(path, maxBytes=10_000_000, backupCount=5)
+    # backupCount = number of old log files to keep (e.g., app.log.1, app.log.2, etc.)
+    # maxBytes = maximum size of log file in bytes
+    fh = ConcurrentRotatingFileHandler(path, maxBytes=max_bytes, backupCount=backup_count)
     fh.setLevel(level)
     # Keep JSON format for file logging (useful for log analysis tools)
     fh.setFormatter(MyJSONFormatter(fmt_keys={"level": "levelname", "logger": "name"}))
     return fh
 
-def setup_logging(*, level: int | None = None, log_file: str | None = None) -> None:
+def setup_logging(
+    *,
+    level: int | None = None,
+    log_path: str = "logs/app.log",
+    max_log_files: int = 5,
+    max_log_size: int = 10_000_000) -> None:
+
     if level is None:
         debug_env = os.getenv("DEBUG", "false").lower() in {"1", "true", "yes", "on"}
         level = logging.DEBUG if debug_env else logging.INFO
@@ -140,9 +148,9 @@ def setup_logging(*, level: int | None = None, log_file: str | None = None) -> N
     root.setLevel(level)
     root.addHandler(_build_console_handler(level))
 
-    if log_file:
+    if log_path:
         try:
-            root.addHandler(_build_file_handler(log_file, level))
+            root.addHandler(_build_file_handler(log_path, level, max_log_size, max_log_files))
         except OSError as e:
             logging.getLogger().warning(f"Failed to setup file handler: {e}")
 

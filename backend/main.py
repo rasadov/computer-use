@@ -16,7 +16,7 @@ from backend.router.session_router import router as session_router
 from backend.router.health_router import router as health_router
 
 
-setup_logging(log_file="logs/app.log")
+setup_logging(log_path="logs/app.log", max_log_files=5, max_log_size=10_000_000)
 
 logger = logging.getLogger(__name__)
 

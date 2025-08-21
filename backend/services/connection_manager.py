@@ -7,10 +7,13 @@ import orjson
 import redis.asyncio as redis
 from fastapi import WebSocket
 
+from backend.base.decorators import singleton
+
 
 logger = logging.getLogger(__name__)
 
 
+@singleton
 class RedisConnectionManager:
     """Manager for WebSocket connections
     

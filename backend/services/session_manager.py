@@ -4,6 +4,7 @@ from datetime import datetime
 
 import orjson
 
+from backend.base.decorators import singleton
 from backend.base.session_mager import BaseSessionManager
 from backend.models.session import SessionDB
 from backend.models.message import ChatMessage
@@ -12,6 +13,7 @@ from backend.repositories.session_repository import SessionRepository
 from backend.repositories.message_repository import MessageRepository
 
 
+@singleton
 class SessionManager(BaseSessionManager):
     """
     Implementation of SessionManager using SQLAlchemy

@@ -1,9 +1,9 @@
+import datetime as dt
 import logging
 import os
+import shutil
 import sys
 import tempfile
-import datetime as dt
-import shutil
 import time
 from io import StringIO
 from unittest import TestCase, main
@@ -15,9 +15,9 @@ from backend.core.logger import (
     MyJSONFormatter,
     NonErrorFilter,
     StandardTextFormatter,
-    _ensure_logs_dir,
     _build_console_handler,
     _build_file_handler,
+    _ensure_logs_dir,
     setup_logging,
 )
 
@@ -85,7 +85,7 @@ class TestLogger(TestCase):
         output = formatter.format(record)
         parsed = orjson.loads(output)
         self.assertEqual(parsed["custom_attr"], "custom_value")
-        
+
     def test_my_json_formatter_with_exception(self):
         """Test MyJSONFormatter with exception info."""
         formatter = MyJSONFormatter(fmt_keys={"level": "levelname", "logger": "name"})
@@ -93,7 +93,7 @@ class TestLogger(TestCase):
         logger.setLevel(logging.ERROR)
         try:
             raise ValueError("Test error")
-        except ValueError as e:
+        except ValueError:
             record = logging.LogRecord(
                 name="test",
                 level=logging.ERROR,
@@ -170,7 +170,7 @@ class TestLogger(TestCase):
         self.assertIsInstance(logger.handlers[1], logging.FileHandler)
         # Verify file handler writes logs
         logger.info("Test log")
-        with open(self.log_file, "r") as f:
+        with open(self.log_file) as f:
             log_entry = orjson.loads(f.read())
             self.assertEqual(log_entry["message"], "Test log")
 
@@ -192,9 +192,7 @@ class TestLogger(TestCase):
         for i in range(n_logs):
             logger.info(f"Test message {i}")
         duration = time.time() - start_time
-        logs_per_second = n_logs / duration
-        print(f"Logged {n_logs} messages in {duration:.2f} seconds ({logs_per_second:.2f} logs/sec)")
-        # Assert performance is reasonable (threshold depends on system)
+
         self.assertLess(duration, 2.0, f"Logging {n_logs} messages took too long: {duration:.2f} seconds")
 
 if __name__ == "__main__":

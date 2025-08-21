@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
 import logging
 import os
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -10,7 +10,6 @@ from fastapi import WebSocket
 
 from backend.base.decorators import singleton
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class WebsocketsManager:
     """Manager for WebSocket connections
-    
+
     This class is responsible for managing WebSocket connections
     and tracking active sessions.
     """

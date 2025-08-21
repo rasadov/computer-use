@@ -1,12 +1,11 @@
-from typing import Optional, Sequence
 import logging
+from typing import Optional, Sequence
 
 from sqlalchemy import select
 
+from backend.base.decorators import singleton
 from backend.base.repository import BaseRepository
 from backend.models.message import ChatMessage
-from backend.base.decorators import singleton
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,7 @@ class MessageRepository(BaseRepository[ChatMessage]):
         """
         result = await self.session.execute(select(ChatMessage))
         logger.debug(
-            f"Retrieved all messages from DB")
+            "Retrieved all messages from DB")
         return result.scalars().all()
 
     async def get_by_session_id(
@@ -120,11 +119,11 @@ class MessageRepository(BaseRepository[ChatMessage]):
         try:
             self.session.add_all(messages)
             await self.session.commit()
-            
+
             # Refresh all objects to get their IDs and updated fields
             for message in messages:
                 await self.session.refresh(message)
-            
+
             logger.debug(f"Created {len(messages)} messages in batch")
             return messages
         except Exception as e:

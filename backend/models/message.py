@@ -1,10 +1,11 @@
-from typing import TYPE_CHECKING
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import String, DateTime, ForeignKey, JSON
+from sqlalchemy import JSON, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.base.models import CustomBase
+
 if TYPE_CHECKING:
     # Import SessionDB for type checking
     # If statement is needed to avoid circular import
@@ -20,7 +21,7 @@ class ChatMessage(CustomBase):
         content: dict
         timestamp: datetime
         message_type: str
-    
+
     Relationships:
         session: SessionDB
     """

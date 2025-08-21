@@ -1,5 +1,5 @@
-from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.database.connection import Base
 

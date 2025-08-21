@@ -1,17 +1,20 @@
+import logging
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
-import uuid
-from typing import Optional, Sequence, Any
+from typing import Any, Optional, Sequence
 
 import orjson
 
 from backend.base.decorators import singleton
 from backend.base.session_mager import BaseSessionManager
-from backend.models.session import SessionDB
+from backend.models.enums import Sender, SessionStatus
 from backend.models.message import ChatMessage
-from backend.models.enums import SessionStatus, Sender
-from backend.repositories.session_repository import SessionRepository
+from backend.models.session import SessionDB
 from backend.repositories.message_repository import MessageRepository
+from backend.repositories.session_repository import SessionRepository
+
+logger = logging.getLogger(__name__)
 
 
 @singleton
@@ -81,63 +84,60 @@ class SessionManager(BaseSessionManager):
             session_id: str,
             raw_messages: Sequence[Any]) -> Sequence[ChatMessage]:
         """Add multiple messages to the session in a single transaction
-        
+
         Args:
             session_id: The session ID
             raw_messages: List of raw message dicts with 'role' and 'content' keys
-            
+
         Raises:
             ValueError: If messages are invalid or session_id is empty
             TypeError: If message content cannot be serialized
         """
         if not session_id or not session_id.strip():
-            raise ValueError("session_id cannot be empty")
-            
+            logger.error("session_id cannot be empty")
+            return []
+
         if not raw_messages:
             return []
-        
+
         messages = []
-        
+
         for i, msg in enumerate(raw_messages):
-            try:
-                # Validate message structure
-                if not hasattr(msg, 'get') and not isinstance(msg, dict):
-                    raise ValueError(f"Message {i} is not a valid dict-like object")
-                
-                # Extract and validate role
-                role = Sender.BOT if msg.get("role") == "assistant" else Sender.TOOL
-                if not isinstance(role, str) or not role.strip():
-                    raise ValueError(f"Message {i} has invalid role: {role}")
-                
-                # Handle content serialization
-                content_data = msg.get("content")
-                if content_data is None:
-                    raise ValueError(f"Message {i} missing required 'content' field")
-                
-                if isinstance(content_data, dict):
-                    try:
-                        content_json = orjson.dumps(content_data).decode("utf-8")
-                    except (TypeError, orjson.JSONEncodeError) as e:
-                        raise TypeError(f"Message {i} content cannot be serialized: {e}")
-                else:
-                    content_json = str(content_data)
-                
-                message = ChatMessage(
-                    id=str(uuid.uuid4()),
-                    session_id=session_id,
-                    role=role.strip(),
-                    content=content_json,
-                    timestamp=datetime.now()
-                )
-                messages.append(message)
-                
-            except (ValueError, TypeError) as e:
-                # Re-raise with context
-                raise ValueError(f"Failed to process message batch at index {i}: {e}")
-            except Exception as e:
-                # Catch unexpected errors
-                raise RuntimeError(f"Unexpected error processing message {i}: {e}")
-        
+            # Validate message structure
+            if not hasattr(msg, 'get') and not isinstance(msg, dict):
+                logger.error(f"Message {i} is not a valid dict-like object")
+                return []
+
+            # Extract and validate role
+            role = Sender.BOT if msg.get("role") == "assistant" else Sender.TOOL
+            if not isinstance(role, str) or not role.strip():
+                logger.error(f"Message {i} has invalid role: {role}")
+                return []
+
+            # Handle content serialization
+            content_data = msg.get("content")
+            if content_data is None:
+                logger.error(f"Message {i} missing required 'content' field")
+                return []
+
+            if isinstance(content_data, dict):
+                try:
+                    content_json = orjson.dumps(content_data).decode("utf-8")
+                except (TypeError, orjson.JSONEncodeError) as e:
+                    logger.error(f"Error serializing message {i} content: {e}")
+                    return []
+            else:
+                content_json = str(content_data)
+
+            message = ChatMessage(
+                id=str(uuid.uuid4()),
+                session_id=session_id,
+                role=role.strip(),
+                content=content_json,
+                timestamp=datetime.now()
+            )
+            messages.append(message)
+
         return await self.message_repository.create_batch(messages)
 
     async def update_session_status(self, session_id: str, status: SessionStatus):

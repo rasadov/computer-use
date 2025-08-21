@@ -1,8 +1,7 @@
-import orjson
 import logging
 
+import orjson
 from fastapi import WebSocket
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,20 +1,18 @@
 import asyncio
 import logging
 
+import orjson
 from anthropic.types.beta import BetaContentBlockParam
 from fastapi import WebSocket
 from httpx import Request, Response
-import orjson
 
 from backend.base.decorators import singleton
-from backend.models.enums import LLMModel, Sender, ToolVersion
+from backend.models.enums import LLMModel, Sender, TaskStatus, ToolVersion
 from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
-from backend.models.enums import TaskStatus
 from backend.utils.websocket import send_websocket_message
-from computer_use_demo.loop import sampling_loop, APIProvider
+from computer_use_demo.loop import APIProvider, sampling_loop
 from computer_use_demo.tools.base import ToolResult
-
 
 logger = logging.getLogger(__name__)
 
@@ -232,10 +230,10 @@ class AIProcessingService:
                     session_id=session_id,
                     raw_messages=new_messages
                 )
-                
+
                 logger.info(f"Successfully saved {len(saved_messages)} messages in batch")
                 saved_count = len(saved_messages)
-                
+
             except Exception as e:
                 logger.error(f"Error saving messages batch: {e}")
                 # Fallback to individual saves if batch fails
@@ -245,7 +243,7 @@ class AIProcessingService:
                     try:
                         content_data = msg.get("content", {})
                         content_json = orjson.dumps(content_data).decode("utf-8")
-                        
+
                         await self.session_manager.add_message(
                             session_id=session_id,
                             role=Sender.BOT if msg.get("role") == "assistant" else Sender.TOOL,
@@ -255,7 +253,7 @@ class AIProcessingService:
                     except Exception as fallback_error:
                         logger.error(f"Error saving individual message {i}: {fallback_error}")
                         continue
-                
+
                 logger.info(f"Fallback save complete. Saved {saved_count}/{len(new_messages)} messages.")
 
             # Send completion signal

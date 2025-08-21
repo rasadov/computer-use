@@ -1,29 +1,26 @@
 import asyncio
 import logging
+from typing import Annotated
 
-from fastapi import (
-    APIRouter,
-    WebSocket,
-    WebSocketDisconnect,
-    Depends
-)
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from backend.core.dependencies import (
-    get_session_manager,
-    get_connection_manager,
     get_ai_processing_service,
+    get_connection_manager,
+    get_connection_manager_websocket,
+    get_session_manager,
     get_session_manager_websocket,
-    get_connection_manager_websocket
 )
-from backend.models.enums import SessionStatus, Sender
+from backend.models.enums import SessionStatus
+from backend.schemas import (
+    error as error_schemas,
+    message as message_schemas,
+    session as session_schemas,
+)
 from backend.services.ai_processing_service import AIProcessingService
 from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
 from backend.utils.convert import convert_to_anthropic_message
-from backend.schemas import session as session_schemas
-from backend.schemas import message as message_schemas
-from backend.schemas import error as error_schemas
-
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -34,7 +31,7 @@ router = APIRouter()
              tags=["Sessions"]
              )
 async def create_session(
-    session_manager: SessionManager = Depends(get_session_manager),
+    session_manager: Annotated[SessionManager, Depends(get_session_manager)],
 ):
     """Create a new session"""
     session_id = await session_manager.create_session()
@@ -46,7 +43,7 @@ async def create_session(
             tags=["Sessions"]
             )
 async def list_sessions(
-    session_manager: SessionManager = Depends(get_session_manager),
+    session_manager: Annotated[SessionManager, Depends(get_session_manager)],
 ):
     """List all sessions"""
     sessions = await session_manager.list_sessions()
@@ -69,7 +66,7 @@ async def list_sessions(
             )
 async def get_session(
     session_id: str,
-    session_manager: SessionManager = Depends(get_session_manager),
+    session_manager: Annotated[SessionManager, Depends(get_session_manager)],
 ):
     """Get a session by id"""
     session = await session_manager.get_session(session_id)
@@ -98,9 +95,9 @@ async def get_session(
              )
 async def send_message(
     payload: message_schemas.SendMessageRequest,
-    session_manager: SessionManager = Depends(get_session_manager),
-    connection_manager: WebsocketsManager = Depends(get_connection_manager),
-    ai_processing_service: AIProcessingService = Depends(get_ai_processing_service),
+    session_manager: Annotated[SessionManager, Depends(get_session_manager)],
+    connection_manager: Annotated[WebsocketsManager, Depends(get_connection_manager)],
+    ai_processing_service: Annotated[AIProcessingService, Depends(get_ai_processing_service)],
 ):
     """Send a message to a session"""
     logger.info(f"Received message for session {payload.session_id}: {payload.message}")
@@ -116,7 +113,7 @@ async def send_message(
         return error_schemas.ErrorResponse(error="Session not connected")
 
     try:
-        logger.debug(f"Adding user message to database...")
+        logger.debug("Adding user message to database...")
         saved_message = await session_manager.add_user_message(
             session_id=payload.session_id,
             message=payload.message
@@ -127,7 +124,7 @@ async def send_message(
         anthropic_messages = [
             convert_to_anthropic_message(msg) for msg in db_messages]
 
-        logger.debug(f"Starting background task to process message...")
+        logger.debug("Starting background task to process message...")
         logger.info(f"anthropic messages: {anthropic_messages}")
         asyncio.create_task(
             ai_processing_service.process_message_and_save(
@@ -155,8 +152,8 @@ async def send_message(
 async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str,
-    session_manager: SessionManager = Depends(get_session_manager_websocket),
-    connection_manager: WebsocketsManager = Depends(get_connection_manager_websocket),
+    session_manager: Annotated[SessionManager, Depends(get_session_manager_websocket)],
+    connection_manager: Annotated[WebsocketsManager, Depends(get_connection_manager_websocket)],
 ):
     """WebSocket endpoint for real-time updates from the agent"""
     await websocket.accept()

@@ -1,7 +1,7 @@
 import orjson
+from anthropic.types.beta import BetaMessageParam, BetaTextBlockParam
 
 from backend.models.message import ChatMessage
-from anthropic.types.beta import BetaMessageParam, BetaTextBlockParam
 
 
 def convert_to_anthropic_message(
@@ -17,7 +17,7 @@ def convert_to_anthropic_message(
                 content = [content_data]
             else:
                 content = [{"type": "text", "text": str(content_data)}]
-            
+
             return {
                 "role": db_message.role,
                 "content": content

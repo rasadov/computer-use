@@ -1,15 +1,14 @@
 from logging import getLogger
-from typing import AsyncGenerator
+from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends, Request, WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from backend.repositories.message_repository import MessageRepository
 from backend.repositories.session_repository import SessionRepository
+from backend.services.ai_processing_service import AIProcessingService
 from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
-from backend.services.ai_processing_service import AIProcessingService
-
 
 logger = getLogger(__name__)
 
@@ -33,20 +32,20 @@ async def get_db_websocket(websocket: WebSocket) -> AsyncGenerator[AsyncSession,
 
 
 async def get_message_repository(
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> MessageRepository:
     return MessageRepository(db)
 
 
 async def get_session_repository(
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> SessionRepository:
     return SessionRepository(db)
 
 
 async def get_session_manager(
-    messages_repository: MessageRepository = Depends(get_message_repository),
-    session_repository: SessionRepository = Depends(get_session_repository),
+    messages_repository: Annotated[MessageRepository, Depends(get_message_repository)],
+    session_repository: Annotated[SessionRepository, Depends(get_session_repository)],
 ) -> SessionManager:
     return SessionManager(
         session_repository,
@@ -55,20 +54,20 @@ async def get_session_manager(
 
 
 async def get_message_repository_websocket(
-    db: AsyncSession = Depends(get_db_websocket),
+    db: Annotated[AsyncSession, Depends(get_db_websocket)],
 ) -> MessageRepository:
     return MessageRepository(db)
 
 
 async def get_session_repository_websocket(
-    db: AsyncSession = Depends(get_db_websocket),
+    db: Annotated[AsyncSession, Depends(get_db_websocket)],
 ) -> SessionRepository:
     return SessionRepository(db)
 
 
 async def get_session_manager_websocket(
-    messages_repository: MessageRepository = Depends(get_message_repository_websocket),
-    session_repository: SessionRepository = Depends(get_session_repository_websocket),
+    messages_repository: Annotated[MessageRepository, Depends(get_message_repository_websocket)],
+    session_repository: Annotated[SessionRepository, Depends(get_session_repository_websocket)],
 ) -> SessionManager:
     return SessionManager(
         session_repository,
@@ -85,8 +84,8 @@ async def get_connection_manager_websocket(websocket: WebSocket) -> WebsocketsMa
 
 
 async def get_ai_processing_service(
-    session_manager: SessionManager = Depends(get_session_manager),
-    connection_manager: WebsocketsManager = Depends(get_connection_manager),
+    session_manager: Annotated[SessionManager, Depends(get_session_manager)],
+    connection_manager: Annotated[WebsocketsManager, Depends(get_connection_manager)],
 ) -> AIProcessingService:
     return AIProcessingService(
         connection_manager,

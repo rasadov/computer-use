@@ -77,7 +77,7 @@ const ComputerUseInterface = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         await fetchSessions();
@@ -99,7 +99,7 @@ const ComputerUseInterface = () => {
     }
 
     const ws = new WebSocket(`${WS_BASE}/sessions/${sessionId}/ws`);
-    
+
     ws.onopen = () => {
       setIsConnected(true);
       setError(null);
@@ -108,7 +108,7 @@ const ComputerUseInterface = () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+  
         switch (data.type) {
           case 'connection_established':
             console.log('WebSocket connected:', data.content);
@@ -158,7 +158,7 @@ const ComputerUseInterface = () => {
   const selectSession = async (sessionId) => {
     setCurrentSession(sessionId);
     setMessages([]);
-    
+
     try {
       const response = await fetch(`${API_BASE}/sessions/${sessionId}`);
       if (response.ok) {
@@ -248,7 +248,7 @@ const ComputerUseInterface = () => {
       connected: 'text-blue-500',
       idle: 'text-gray-400'
     };
-    
+
     return <Circle className={`w-3 h-3 ${colors[status]} fill-current`} />;
   };
 
@@ -320,8 +320,8 @@ const ComputerUseInterface = () => {
             <Monitor className="w-6 h-6 text-blue-500" />
             <h1 className="text-xl font-semibold">Computer Use Interface</h1>
           </div>
-          
-          <div className="flex items-center gap-4">
+
+              <div className="flex items-center gap-4">
             {currentSession && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-400">
@@ -330,8 +330,8 @@ const ComputerUseInterface = () => {
                 <StatusIndicator status={isConnected ? (isSessionActive ? 'active' : 'connected') : 'idle'} />
               </div>
             )}
-            
-            {/* <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+  
+                    {/* <button className="p-2 hover:bg-gray-700 rounded-lg transition-colors">
               <Settings className="w-5 h-5" />
             </button> */}
           </div>
@@ -497,12 +497,12 @@ const ComputerUseInterface = () => {
                   <Send className="w-4 h-4" />
                 </button>
               </div>
-              
-              {currentSession && !isConnected && (
+
+                          {currentSession && !isConnected && (
                 <p className="text-red-400 text-xs mt-2">Disconnected from session</p>
               )}
-              
-              {isSessionActive && (
+
+                          {isSessionActive && (
                 <p className="text-yellow-400 text-xs mt-2">AI is processing...</p>
               )}
             </div>

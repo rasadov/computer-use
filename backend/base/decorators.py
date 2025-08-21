@@ -1,11 +1,11 @@
-from functools import wraps
 import threading
+from functools import wraps
 
 
 def singleton(cls):
     instances = {}
     lock = threading.Lock()
-    
+
     @wraps(cls)
     def get_instance(*args, **kwargs):
         if cls not in instances:

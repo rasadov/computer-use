@@ -2,11 +2,10 @@ import datetime as dt
 import logging
 import os
 import sys
-from typing_extensions import override
 
 import orjson
 from concurrent_log_handler import ConcurrentRotatingFileHandler
-
+from typing_extensions import override
 
 LOG_RECORD_BUILTIN_ATTRS = {
     "args", "asctime", "created", "exc_info", "exc_text", "filename", "funcName",
@@ -48,7 +47,7 @@ class MyJSONFormatter(logging.Formatter):
 
 class StandardTextFormatter(logging.Formatter):
     """A formatter that outputs human-readable text instead of JSON."""
-    
+
     def __init__(self, *, include_timestamp: bool = True, include_logger: bool = True):
         super().__init__()
         self.include_timestamp = include_timestamp
@@ -58,41 +57,41 @@ class StandardTextFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         # Build the log message parts
         parts = []
-        
+
         # Add timestamp if requested
         if self.include_timestamp:
             timestamp = dt.datetime.fromtimestamp(record.created, tz=dt.timezone.utc)
             parts.append(timestamp.strftime("%Y-%m-%d %H:%M:%S UTC"))
-        
+
         # Add level name with color/formatting
         level_str = f"[{record.levelname}]"
         parts.append(level_str)
-        
+
         # Add logger name if requested
         if self.include_logger and record.name != "root":
             parts.append(f"{record.name}")
-        
+
         # Add the actual message
         message = record.getMessage()
-        
+
         # Combine parts with the message
         prefix = " ".join(parts)
         log_line = f"{prefix}: {message}"
-        
+
         # Add exception info if present
         if record.exc_info:
             log_line += "\n" + self.formatException(record.exc_info)
-        
+
         # Add stack info if present
         if record.stack_info:
             log_line += "\n" + self.formatStack(record.stack_info)
-        
+
         # Add custom attributes if present
         custom_attrs = getattr(record, "custom_attrs", {})
         if custom_attrs:
             attrs_str = " ".join(f"{k}={v}" for k, v in custom_attrs.items())
             log_line += f" [{attrs_str}]"
-        
+
         return log_line
 
 

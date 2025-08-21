@@ -1,5 +1,7 @@
 import pytest
+
 from backend.services.session_manager import SessionManager
+
 
 @pytest.fixture
 async def session_id(session_manager: SessionManager):

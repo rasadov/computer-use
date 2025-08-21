@@ -1,6 +1,4 @@
-### Author: Rauf Asadov (github: rasadov)
-### Video: https://youtu.be/fLkMN1c9SLU?si=voTokW0L5EmRVBBP
-# Computer Use Demo Backend
+# Computer Use Demo
 
 A FastAPI-based backend for the Anthropic Computer Use Demo with persistent session management, real-time streaming, and a modern web interface. This application allows Claude to interact with a virtual desktop environment through a RESTful API with WebSocket support.
 

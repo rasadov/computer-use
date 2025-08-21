@@ -23,9 +23,12 @@ echo "Python path: $(which python)"
 echo "Checking uvicorn installation..."
 python -c "import uvicorn; print(f'uvicorn version: {uvicorn.__version__}')" || echo "uvicorn not found in Python"
 
-# Try using python -m uvicorn instead of direct uvicorn command
-echo "Starting FastAPI server..."
-exec python -m uvicorn backend.main:app \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --log-level info
+# Gunicorn args (input from Dockerfile)
+GUNICORN_WORKERS=${GUNICORN_WORKERS:-1}
+
+# Starting FastAPI server with gunicorn using uvicorn workers
+echo "Starting FastAPI server with gunicorn + uvicorn workers..."
+exec python -m gunicorn backend.main:app \
+    --bind 0.0.0.0:8000 \
+    --workers $GUNICORN_WORKERS \
+    --worker-class uvicorn.workers.UvicornWorker

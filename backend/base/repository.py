@@ -23,13 +23,13 @@ class BaseRepository(ABC, Generic[T]):
         """Create a new model"""
 
     @abstractmethod
-    def update(self, id: str, fields: dict) -> T | Coroutine:
+    def update(self, item_id: str, fields: dict) -> T | Coroutine:
         """Update an existing model"""
 
     @abstractmethod
-    def delete(self, id: str) -> T | Coroutine:
+    def delete(self, item_id: str) -> T | Coroutine:
         """Delete a model"""
 
     @abstractmethod
-    def get_by_id(self, id: str) -> Optional[T] | Coroutine:
+    def get_by_id(self, item_id: str) -> Optional[T] | Coroutine:
         """Get a model by id"""

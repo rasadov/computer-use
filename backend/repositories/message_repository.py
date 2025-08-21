@@ -19,14 +19,16 @@ class MessageRepository(BaseRepository[ChatMessage]):
         session (AsyncSession): Async session for database operations
     """
 
-    async def get_by_id(self, id: str) -> Optional[ChatMessage]:
+    async def get_by_id(self, item_id: str) -> Optional[ChatMessage]:
         """Get a message by id
+        Args:
+            item_id (str): Message id
         Returns:
             Optional[ChatMessage]: Message object or None if not found
         """
-        result = await self.session.execute(select(ChatMessage).where(ChatMessage.id == id))
+        result = await self.session.execute(select(ChatMessage).where(ChatMessage.id == item_id))
         logger.debug(
-            f"Retrieved message from DB: {id}")
+            f"Retrieved message from DB: {item_id}")
         return result.scalar_one_or_none()
 
     async def get_all(self) -> Sequence[ChatMessage]:
@@ -75,38 +77,38 @@ class MessageRepository(BaseRepository[ChatMessage]):
             await self.session.rollback()
             raise
 
-    async def update(self, id: str, fields: dict) -> ChatMessage:
+    async def update(self, item_id: str, fields: dict) -> ChatMessage:
         """Update a message
         Args:
-            id (str): Message id
+            item_id (str): Message id
             fields (dict): Dictionary of fields to update
         Returns:
             ChatMessage: Updated message object
         """
-        message = await self.get_by_id(id)
+        message = await self.get_by_id(item_id)
         if not message:
-            raise ValueError(f"Message {id} not found")
+            raise ValueError(f"Message {item_id} not found")
         for key, value in fields.items():
             setattr(message, key, value)
         await self.session.commit()
         logger.debug(
-            f"Updated message in DB: {id}")
+            f"Updated message in DB: {item_id}")
         return message
 
-    async def delete(self, id: str) -> bool:
+    async def delete(self, item_id: str) -> bool:
         """Delete a message
         Args:
-            id (str): Message id
+            item_id (str): Message id
         Returns:
             bool: True if message was deleted, False otherwise
         """
-        message = await self.get_by_id(id)
+        message = await self.get_by_id(item_id)
         if not message:
-            raise ValueError(f"Message {id} not found")
+            raise ValueError(f"Message {item_id} not found")
         await self.session.delete(message)
         await self.session.commit()
         logger.debug(
-            f"Deleted message in DB: {id}")
+            f"Deleted message in DB: {item_id}")
         return True
 
     async def create_batch(self, messages: Sequence[ChatMessage]) -> Sequence[ChatMessage]:

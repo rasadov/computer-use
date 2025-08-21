@@ -34,53 +34,53 @@ class SessionRepository(BaseRepository[SessionDB]):
             f"Created session in DB: {model.id}")
         return model
 
-    async def update(self, id: str, fields: dict) -> SessionDB:
+    async def update(self, item_id: str, fields: dict) -> SessionDB:
         """Update a session
         Args:
-            id (str): Session id
+            item_id (str): Session id
             fields (dict): Dictionary of fields to update
         Returns:
             SessionDB: Updated session object
         """
-        session = await self.get_by_id(id)
+        session = await self.get_by_id(item_id)
         if not session:
-            raise ValueError(f"Session {id} not found")
+            raise ValueError(f"Session {item_id} not found")
         for key, value in fields.items():
             setattr(session, key, value)
         await self.session.commit()
         await self.session.refresh(session)
         logger.debug(
-            f"Updated session in DB: {id}")
+            f"Updated session in DB: {item_id}")
         return session
 
-    async def delete(self, id: str) -> bool:
+    async def delete(self, item_id: str) -> bool:
         """Delete a session
         Args:
-            id (str): Session id
+            item_id (str): Session id
         Returns:
             bool: True if session was deleted, False otherwise
         """
-        session = await self.get_by_id(id)
+        session = await self.get_by_id(item_id)
         if not session:
-            raise ValueError(f"Session {id} not found")
+            raise ValueError(f"Session {item_id} not found")
         await self.session.delete(session)
         await self.session.commit()
         logger.debug(
-            f"Deleted session in DB: {id}")
+            f"Deleted session in DB: {item_id}")
         return True
 
-    async def get_by_id(self, id: str) -> Optional[SessionDB]:
+    async def get_by_id(self, item_id: str) -> Optional[SessionDB]:
         """Get a session by id
         Args:
-            id (str): Session id
+            item_id (str): Session id
         Returns:
             Optional[SessionDB]: Session object or None if not found
         """
         result = await self.session.execute(
-            select(SessionDB).options(selectinload(SessionDB.messages)).where(SessionDB.id == id)
+            select(SessionDB).options(selectinload(SessionDB.messages)).where(SessionDB.id == item_id)
         )
         logger.debug(
-            f"Retrieved session from DB: {id}")
+            f"Retrieved session from DB: {item_id}")
         return result.scalar_one_or_none()
 
     async def get_all(self) -> Sequence[SessionDB]:

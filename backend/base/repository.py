@@ -1,5 +1,5 @@
-from abc import ABC
-from typing import Generic, TypeVar
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar, Optional, Coroutine
 from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +16,25 @@ class BaseRepository(ABC, Generic[T]):
     
     Args:
         session (AsyncSession): Async session for database operations
-
-    TODO: add abstract methods
     """
     session: AsyncSession
+
+    @abstractmethod
+    def create(self, model: T) -> T | Coroutine:
+        """Create a new model"""
+        pass
+
+    @abstractmethod
+    def update(self, id: str, fields: dict) -> T | Coroutine:
+        """Update an existing model"""
+        pass
+
+    @abstractmethod
+    def delete(self, id: str) -> T | Coroutine:
+        """Delete a model"""
+        pass
+    
+    @abstractmethod
+    def get_by_id(self, id: str) -> Optional[T] | Coroutine:
+        """Get a model by id"""
+        pass

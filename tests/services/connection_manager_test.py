@@ -1,5 +1,6 @@
 from unittest import mock
 
+import orjson
 import pytest
 from fastapi import WebSocket
 
@@ -34,6 +35,37 @@ async def test_get_connection(websockets_manager: WebsocketsManager, websocket: 
     retrieved = await websockets_manager.get_connection(session_id)
     
     assert retrieved == websocket
+
+
+async def test_is_session_active(websockets_manager: WebsocketsManager, websocket: WebSocket, session_id: str):
+    """Test checking if a session is active"""
+    await websockets_manager.add_connection(session_id, websocket)
+    
+    assert await websockets_manager.is_session_active(session_id)
+
+
+async def test_is_not_session_active(websockets_manager: WebsocketsManager):
+    """Test checking if a session is not active"""
+    assert not await websockets_manager.is_session_active("non_existing_session_id")
+
+
+async def test_send_to_session(websockets_manager: WebsocketsManager, websocket: WebSocket, session_id: str):
+    """Test sending a message to a session"""
+    websocket.send_text = mock.AsyncMock()
+
+    await websockets_manager.add_connection(session_id, websocket)
+    
+    result = await websockets_manager.send_to_session(session_id, "test", "test")
+    assert result is True
+
+    recieved_message = orjson.loads(websocket.send_text.call_args[0][0])
+
+    expected_message = {
+        "type": "test",
+        "content": "test"
+    }
+
+    assert expected_message == recieved_message
 
 
 async def test_get_not_existing_connection(websockets_manager: WebsocketsManager):

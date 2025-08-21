@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 import logging
 import os
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Optional
 
 import orjson
 import redis.asyncio as redis
@@ -24,7 +24,7 @@ class WebsocketsManager:
     """
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     redis_client: Optional[redis.Redis] = None
-    local_connections: Dict[str, WebSocket] = field(default_factory=dict)
+    local_connections: dict[str, WebSocket] = field(default_factory=dict)
 
     async def ping(self):
         """Ping Redis connection"""
@@ -83,21 +83,6 @@ class WebsocketsManager:
         """Check if session is active across all instances"""
         await self.connect()
         return await self.redis_client.hexists("active_sessions", session_id) # type: ignore
-
-    async def get_active_sessions(self) -> Dict[str, dict]:
-        """Get all active sessions from Redis"""
-        await self.connect()
-        sessions_data = await self.redis_client.hgetall("active_sessions") # type: ignore
-
-        result = {}
-        for session_id, data_str in sessions_data.items():
-            try:
-                result[session_id] = orjson.loads(data_str)
-            except orjson.JSONDecodeError:
-                logger.warning(f"Invalid JSON for session {session_id}")
-                continue
-
-        return result
 
     async def send_to_session(
             self,

@@ -1,6 +1,7 @@
+from dataclasses import dataclass
+from datetime import datetime
 import uuid
 from typing import Optional, Sequence, Any
-from datetime import datetime
 
 import orjson
 
@@ -14,14 +15,13 @@ from backend.repositories.message_repository import MessageRepository
 
 
 @singleton
+@dataclass
 class SessionManager(BaseSessionManager):
     """
     Implementation of SessionManager using SQLAlchemy
     """
-    def __init__(self, session_repository: SessionRepository,
-                 message_repository: MessageRepository):
-        self.session_repository = session_repository
-        self.message_repository = message_repository
+    session_repository: SessionRepository
+    message_repository: MessageRepository
 
     async def create_session(self) -> str:
         session_id = str(uuid.uuid4())

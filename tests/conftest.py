@@ -1,5 +1,4 @@
 import os
-import tracemalloc
 from unittest import mock
 
 import pytest
@@ -21,11 +20,47 @@ def mock_screen_dimensions():
 @pytest.fixture
 async def message_repository():
     async_session = mock.AsyncMock()
+    
+    mock_scalars = mock.Mock()
+    mock_scalars.all.return_value = []
+    
+    mock_result = mock.Mock()
+    mock_result.scalars.return_value = mock_scalars
+    mock_result.scalar_one_or_none.return_value = None
+    
+    async_session.execute.return_value = mock_result
+    
+    # Mock session operations to return None (not coroutines)
+    async_session.add.return_value = None
+    async_session.add_all.return_value = None
+    async_session.commit.return_value = None
+    async_session.refresh.return_value = None
+    async_session.rollback.return_value = None
+    async_session.delete.return_value = None
+    
     return MessageRepository(async_session)
 
 @pytest.fixture
 async def sessions_repository():
     async_session = mock.AsyncMock()
+    
+    # Mock the execute method to return a proper result object
+    mock_scalars = mock.Mock()
+    mock_scalars.all.return_value = []
+    
+    mock_result = mock.Mock()
+    mock_result.scalars.return_value = mock_scalars
+    mock_result.scalar_one_or_none.return_value = None
+    
+    async_session.execute.return_value = mock_result
+    
+    # Mock session operations to return None (not coroutines)
+    async_session.add.return_value = None
+    async_session.commit.return_value = None
+    async_session.refresh.return_value = None
+    async_session.rollback.return_value = None
+    async_session.delete.return_value = None
+    
     return SessionRepository(async_session)
 
 @pytest.fixture

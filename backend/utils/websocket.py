@@ -1,4 +1,4 @@
-import json
+import orjson
 import logging
 
 from fastapi import WebSocket
@@ -17,10 +17,10 @@ async def send_websocket_message(
         if not websocket:
             logger.warning("No websocket connection")
             return
-        await websocket.send_text(json.dumps({
+        await websocket.send_text(orjson.dumps({
             "type": message_type,
             "task_status": task_status,
             "content": content
-        }))
+        }).decode("utf-8"))
     except Exception as e:
         logger.error(f"Error sending websocket message: {e}")

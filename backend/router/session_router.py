@@ -17,7 +17,7 @@ from backend.core.dependencies import (
 )
 from backend.models.enums import SessionStatus, Sender
 from backend.services.ai_processing_service import AIProcessingService
-from backend.services.connection_manager import RedisConnectionManager
+from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
 from backend.utils.convert import convert_to_anthropic_message
 from backend.schemas import session as session_schemas
@@ -99,7 +99,7 @@ async def get_session(
 async def send_message(
     payload: message_schemas.SendMessageRequest,
     session_manager: SessionManager = Depends(get_session_manager),
-    connection_manager: RedisConnectionManager = Depends(get_connection_manager),
+    connection_manager: WebsocketsManager = Depends(get_connection_manager),
     ai_processing_service: AIProcessingService = Depends(get_ai_processing_service),
 ):
     """Send a message to a session"""
@@ -156,7 +156,7 @@ async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str,
     session_manager: SessionManager = Depends(get_session_manager_websocket),
-    connection_manager: RedisConnectionManager = Depends(get_connection_manager_websocket),
+    connection_manager: WebsocketsManager = Depends(get_connection_manager_websocket),
 ):
     """WebSocket endpoint for real-time updates from the agent"""
     await websocket.accept()

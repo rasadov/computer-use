@@ -3,7 +3,7 @@ from unittest import mock
 import pytest
 from fastapi import WebSocket
 
-from backend.services.connection_manager import RedisConnectionManager
+from backend.services.connection_manager import WebsocketsManager
 
 
 @pytest.fixture
@@ -14,36 +14,46 @@ async def websocket():
 async def session_id():
     return "test_session_id"
 
-async def test_add_connection(connection_manager: RedisConnectionManager, websocket: WebSocket, session_id: str):
+async def test_add_connection(websockets_manager: WebsocketsManager, websocket: WebSocket, session_id: str):
     """Test adding a WebSocket connection
     Create mock connection, add it to manager, and verify it's added
     """
-    await connection_manager.add_connection(session_id, websocket)
+    await websockets_manager.add_connection(session_id, websocket)
 
-    assert connection_manager.local_connections[session_id] == websocket
+    assert websockets_manager.local_connections[session_id] == websocket
     
-    connection_manager.redis_client.hset.assert_called_once() # type: ignore
+    websockets_manager.redis_client.hset.assert_called_once() # type: ignore
 
 
-async def test_get_connection(connection_manager: RedisConnectionManager, websocket: WebSocket, session_id: str):
+async def test_get_connection(websockets_manager: WebsocketsManager, websocket: WebSocket, session_id: str):
     """Test retrieving a WebSocket connection
     Create mock connection, add it to manager, and retrieve it
     """
-    await connection_manager.add_connection(session_id, websocket)
+    await websockets_manager.add_connection(session_id, websocket)
     
-    retrieved = await connection_manager.get_connection(session_id)
+    retrieved = await websockets_manager.get_connection(session_id)
     
     assert retrieved == websocket
 
 
-async def test_remove_connection(connection_manager: RedisConnectionManager, websocket: WebSocket, session_id: str):
+async def test_get_not_existing_connection(websockets_manager: WebsocketsManager):
+    """Test retrieving a non-existing WebSocket connection"""
+    retrieved = await websockets_manager.get_connection("non_existing_session_id")
+    assert retrieved is None
+
+
+async def test_remove_connection(websockets_manager: WebsocketsManager, websocket: WebSocket, session_id: str):
     """Test removing a WebSocket connection
     Create mock connection, add it to manager, remove it, and verify it's removed
     """
-    await connection_manager.add_connection(session_id, websocket)
+    await websockets_manager.add_connection(session_id, websocket)
 
-    await connection_manager.remove_connection(session_id)
+    await websockets_manager.remove_connection(session_id)
     
-    assert session_id not in connection_manager.local_connections
+    assert session_id not in websockets_manager.local_connections
     
-    connection_manager.redis_client.hdel.assert_called_with("active_sessions", session_id) # type: ignore
+    websockets_manager.redis_client.hdel.assert_called_with("active_sessions", session_id) # type: ignore
+
+async def test_remove_not_existing_connection(websockets_manager: WebsocketsManager):
+    """Test removing a non-existing WebSocket connection"""
+    await websockets_manager.remove_connection("non_existing_session_id")

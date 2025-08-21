@@ -8,7 +8,7 @@ import orjson
 
 from backend.base.decorators import singleton
 from backend.models.enums import LLMModel, Sender, ToolVersion
-from backend.services.connection_manager import RedisConnectionManager
+from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
 from backend.models.enums import TaskStatus
 from backend.utils.websocket import send_websocket_message
@@ -24,17 +24,51 @@ class AIProcessingService:
     """Service for processing AI messages"""
     def __init__(
             self,
-            connection_manager: RedisConnectionManager,
+            connection_manager: WebsocketsManager,
             session_manager: SessionManager):
         self.connection_manager = connection_manager
         self.session_manager = session_manager
 
     async def _get_websocket_connection(self, session_id: str) -> WebSocket:
+        """Get WebSocket connection for a session"""
         websocket = await self.connection_manager.get_connection(session_id)
         if not websocket:
             logger.warning(f"No websocket connection for session {session_id}")
             raise Exception(f"No websocket connection for session {session_id}")
         return websocket
+
+    async def send_messages_to_llm(
+        self,
+        messages: list,
+        model: LLMModel,
+        api_provider: APIProvider,
+        system_prompt_suffix: str,
+        output_callback,
+        tool_output_callback,
+        api_response_callback,
+        api_key: str,
+        tool_version: ToolVersion,
+        max_tokens: int,
+        thinking_budget: int | None,
+    ):
+        """
+        Send API request to LLM
+
+        Wrap sampling loop in a function to make it easier to test
+        """
+        return await sampling_loop(
+            messages=messages,
+            model=model.value,
+            provider=api_provider,
+            system_prompt_suffix=system_prompt_suffix,
+            output_callback=output_callback,
+            tool_output_callback=tool_output_callback,
+            api_response_callback=api_response_callback,
+            api_key=api_key,
+            tool_version=tool_version.value,
+            max_tokens=max_tokens,
+            thinking_budget=thinking_budget,
+        )
 
     async def process_message_and_save(
         self,
@@ -82,7 +116,7 @@ class AIProcessingService:
                     content_dict
                 ))
 
-            def tool_callback(result: ToolResult, tool_id: str):
+            def tool_output_callback(result: ToolResult, tool_id: str):
                 """Handle tool results"""
                 logger.info(f"Tool callback - ID: {tool_id}")
                 result_dict = {}
@@ -102,7 +136,7 @@ class AIProcessingService:
                     result_dict
                 ))
 
-            def api_callback(
+            def api_response_callback(
                     request: Request,
                     response: Response | object | None,
                     error: Exception | None):
@@ -138,16 +172,16 @@ class AIProcessingService:
             for i in range(max_retries):
                 try:
                     # This is the pure AI processing - no database operations
-                    updated_messages = await sampling_loop(
-                        model=model.value,
-                        provider=api_provider,
-                        system_prompt_suffix=system_prompt_suffix,
+                    updated_messages = await self.send_messages_to_llm(
                         messages=anthropic_messages,
+                        model=model,
+                        api_provider=api_provider,
+                        system_prompt_suffix=system_prompt_suffix,
                         output_callback=output_callback,
-                        tool_output_callback=tool_callback,
-                        api_response_callback=api_callback,
+                        tool_output_callback=tool_output_callback,
+                        api_response_callback=api_response_callback,
                         api_key=api_key,
-                        tool_version=tool_version.value,
+                        tool_version=tool_version,
                         max_tokens=max_tokens,
                         thinking_budget=thinking_budget,
                     )

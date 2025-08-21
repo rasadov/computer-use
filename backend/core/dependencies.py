@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from backend.repositories.message_repository import MessageRepository
 from backend.repositories.session_repository import SessionRepository
-from backend.services.connection_manager import RedisConnectionManager
+from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
 from backend.services.ai_processing_service import AIProcessingService
 
@@ -76,17 +76,17 @@ async def get_session_manager_websocket(
     )
 
 
-async def get_connection_manager(request: Request) -> RedisConnectionManager:
+async def get_connection_manager(request: Request) -> WebsocketsManager:
     return request.app.state.connection_manager
 
 
-async def get_connection_manager_websocket(websocket: WebSocket) -> RedisConnectionManager:
+async def get_connection_manager_websocket(websocket: WebSocket) -> WebsocketsManager:
     return websocket.app.state.connection_manager
 
 
 async def get_ai_processing_service(
     session_manager: SessionManager = Depends(get_session_manager),
-    connection_manager: RedisConnectionManager = Depends(get_connection_manager),
+    connection_manager: WebsocketsManager = Depends(get_connection_manager),
 ) -> AIProcessingService:
     return AIProcessingService(
         connection_manager,

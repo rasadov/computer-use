@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 import logging
 import os
 from datetime import datetime
@@ -14,17 +15,16 @@ logger = logging.getLogger(__name__)
 
 
 @singleton
-class RedisConnectionManager:
+@dataclass
+class WebsocketsManager:
     """Manager for WebSocket connections
     
     This class is responsible for managing WebSocket connections
     and tracking active sessions.
     """
-    def __init__(self):
-        self.redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-        self.redis_client: Optional[redis.Redis] = None
-        # Keep local connections for actual WebSocket objects
-        self.local_connections: Dict[str, WebSocket] = {}
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    redis_client: Optional[redis.Redis] = None
+    local_connections: Dict[str, WebSocket] = field(default_factory=dict)
 
     async def ping(self):
         """Ping Redis connection"""
@@ -122,4 +122,4 @@ class RedisConnectionManager:
             return False
 
 
-connection_manager = RedisConnectionManager()
+connection_manager = WebsocketsManager()

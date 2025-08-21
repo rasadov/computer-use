@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends
 
-from backend.services.connection_manager import RedisConnectionManager
+from backend.services.connection_manager import WebsocketsManager
 from backend.core.dependencies import get_connection_manager, get_db
 from backend.schemas import health as health_schemas
 
@@ -47,7 +47,7 @@ async def db_health(
             tags=["Health"]
             )
 async def redis_health(
-    connection_manager: RedisConnectionManager = Depends(get_connection_manager)
+    connection_manager: WebsocketsManager = Depends(get_connection_manager)
 ):
     """Check Redis health"""
     try:

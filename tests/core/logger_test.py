@@ -14,6 +14,7 @@ import orjson
 from backend.core.logger import (
     MyJSONFormatter,
     NonErrorFilter,
+    StandardTextFormatter,
     _ensure_logs_dir,
     _build_console_handler,
     _build_file_handler,
@@ -138,12 +139,12 @@ class TestLogger(TestCase):
         handler: logging.StreamHandler = _build_console_handler(logging.INFO)
         self.assertIsInstance(handler, logging.StreamHandler)
         self.assertEqual(handler.level, logging.INFO)
-        self.assertIsInstance(handler.formatter, MyJSONFormatter)
+        self.assertIsInstance(handler.formatter, StandardTextFormatter)
         self.assertEqual(handler.stream, sys.stdout)
 
     def test_build_file_handler(self):
         """Test _build_file_handler configuration."""
-        handler = _build_file_handler(self.log_file, logging.INFO)
+        handler = _build_file_handler(self.log_file, logging.INFO, max_bytes=1024, backup_count=5)
         self.assertIsInstance(handler, logging.FileHandler)
         self.assertEqual(handler.level, logging.INFO)
         self.assertIsInstance(handler.formatter, MyJSONFormatter)
@@ -156,12 +157,12 @@ class TestLogger(TestCase):
         setup_logging(level=logging.DEBUG)
         logger = logging.getLogger()
         self.assertEqual(logger.level, logging.DEBUG)
-        self.assertEqual(len(logger.handlers), 1)
+        self.assertEqual(len(logger.handlers), 2)
         self.assertIsInstance(logger.handlers[0], logging.StreamHandler)
 
     def test_setup_logging_with_file(self):
         """Test setup_logging with file output."""
-        setup_logging(level=logging.INFO, log_file=self.log_file)
+        setup_logging(level=logging.INFO, log_path=self.log_file)
         logger = logging.getLogger()
         self.assertEqual(logger.level, logging.INFO)
         self.assertEqual(len(logger.handlers), 2)
@@ -184,7 +185,7 @@ class TestLogger(TestCase):
 
     def test_logging_performance(self):
         """Test logging performance with many log messages."""
-        setup_logging(level=logging.INFO, log_file=self.log_file)
+        setup_logging(level=logging.INFO, log_path=self.log_file)
         logger = logging.getLogger("test")
         n_logs = 1000
         start_time = time.time()

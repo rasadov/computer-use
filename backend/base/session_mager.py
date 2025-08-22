@@ -26,7 +26,7 @@ class BaseSessionManager(ABC):
         """Get a session by id"""
 
     @abstractmethod
-    async def get_session_messages(
+    async def get_session_with_messages(
             self, session_id: str) -> Sequence[Message]:
         """Get messages for a session"""
 

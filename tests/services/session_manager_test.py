@@ -18,8 +18,7 @@ async def test_get_session(session_manager: SessionManager, session_id: str):
 
 
 async def test_get_session_messages(session_manager: SessionManager, session_id: str):
-    messages = await session_manager.get_session_messages(session_id)
-    # Mock returns empty list, so we check for that
+    messages = await session_manager.get_messages(session_id)
     assert messages == []
 
 

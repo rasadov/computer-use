@@ -52,7 +52,7 @@ class AIProcessingService:
             )
             logger.info(f"User message saved successfully: {saved_message.id}")
 
-            db_messages = await self.session_manager.get_session_messages(payload.session_id)
+            db_messages = await self.session_manager.get_messages(payload.session_id)
             anthropic_messages = [
                 convert_to_anthropic_message(msg) for msg in db_messages]
 

@@ -41,6 +41,9 @@ class SessionManager(BaseSessionManager):
     async def get_session(self, session_id: str) -> Session | None:
         return await self.session_repository.get_by_id(session_id)
 
+    async def get_messages(self, session_id: str) -> Sequence[Message]:
+        return await self.message_repository.get_by_session_id(session_id)
+
     async def get_session_with_messages(
             self, session_id: str) -> Session | None:
         """Get all messages for a session"""

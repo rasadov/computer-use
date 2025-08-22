@@ -10,22 +10,23 @@ from backend.schemas import health as health_schemas
 from backend.services.connection_manager import WebsocketsManager
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(
+    tags=["Health"]
+)
 
 
 @router.get("/health",
-            response_model=health_schemas.HealthResponse,
-            tags=["Health"]
-            )
-async def health():
+    response_model=health_schemas.HealthResponse,
+)
+async def get_health():
     logger.debug("Health check")
     return health_schemas.HealthResponse(status="healthy")
 
 
 @router.get("/health/db",
-            response_model=health_schemas.DatabaseHealthResponse,
-            tags=["Health"])
-async def db_health(
+    response_model=health_schemas.DatabaseHealthResponse,
+)
+async def get_db_health(
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Check database health"""
@@ -43,10 +44,9 @@ async def db_health(
 
 
 @router.get("/health/redis",
-            response_model=health_schemas.RedisHealthResponse,
-            tags=["Health"]
-            )
-async def redis_health(
+    response_model=health_schemas.RedisHealthResponse,
+)
+async def get_redis_health(
     connection_manager: Annotated[WebsocketsManager, Depends(get_connection_manager)]
 ):
     """Check Redis health"""

@@ -21,13 +21,14 @@ from backend.services.session_manager import SessionManager
 from backend.utils.websocket import cleanup_websocket_connection
 
 logger = logging.getLogger(__name__)
-router = APIRouter()
+router = APIRouter(
+    tags=["Session"]
+)
 
 
 @router.post("/sessions",
-             response_model=session_schemas.CreateSessionResponse,
-             tags=["Sessions"]
-             )
+    response_model=session_schemas.CreateSessionResponse,
+)
 async def create_session(
     session_manager: Annotated[SessionManager, Depends(get_session_manager)],
 ):
@@ -37,9 +38,8 @@ async def create_session(
 
 
 @router.get("/sessions",
-            response_model=session_schemas.ListSessionsResponse,
-            tags=["Sessions"]
-            )
+    response_model=session_schemas.ListSessionsResponse,
+)
 async def list_sessions(
     session_manager: Annotated[SessionManager, Depends(get_session_manager)],
 ):
@@ -59,38 +59,23 @@ async def list_sessions(
 
 
 @router.get("/sessions/{session_id}",
-            response_model=session_schemas.GetSessionResponse,
-            tags=["Sessions"]
-            )
+    response_model=session_schemas.GetSessionResponse,
+)
 async def get_session(
     session_id: str,
     session_manager: Annotated[SessionManager, Depends(get_session_manager)],
 ):
     """Get a session by id"""
-    session = await session_manager.get_session(session_id)
+    session = await session_manager.get_session_with_messages(session_id)
     if session is None:
         return error_schemas.ErrorResponse(error="Session not found")
 
-    messages = await session_manager.get_session_messages(session_id)
-
-    return session_schemas.GetSessionResponse(
-        id=session.id,
-        status=session.status,
-        created_at=session.created_at,
-        messages=[
-            session_schemas.MessageInfo(
-                role=m.role,
-                content=m.content
-            )
-            for m in messages
-        ]
-    )
+    return session
 
 
 @router.post("/sessions/{session_id}/messages",
-             response_model=message_schemas.SendMessageResponse,
-             tags=["Sessions"]
-             )
+    response_model=message_schemas.SendMessageResponse,
+)
 async def send_message(
     payload: message_schemas.SendMessageRequest,
     ai_processing_service: Annotated[AIProcessingService, Depends(get_ai_processing_service)],

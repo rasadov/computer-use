@@ -22,7 +22,7 @@ class SessionRepository(BaseRepository[Session]):
 
     async def get_by_id(self, item_id: str) -> Session | None:
         result = await self.session.execute(
-            select(Session).options(selectinload(Session.messages)).where(Session.id == item_id)
+            select(Session).where(Session.id == item_id)
         )
         logger.debug(
             f"Retrieved session from DB: {item_id}")
@@ -37,7 +37,12 @@ class SessionRepository(BaseRepository[Session]):
         return result.unique().scalars().all()
 
     async def get_with_messages(self, item_id: str) -> Session | None:
-        raise NotImplementedError
+        result = await self.session.execute(
+            select(Session).options(selectinload(Session.messages)).where(Session.id == item_id)
+        )
+        logger.debug(
+            f"Retrieved session with messages from DB: {item_id}")
+        return result.scalar_one_or_none()
 
     async def create(self, model: Session) -> Session:
         self.session.add(model)

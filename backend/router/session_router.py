@@ -21,6 +21,7 @@ from backend.services.ai_processing_service import AIProcessingService
 from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
 from backend.utils.convert import convert_to_anthropic_message
+from backend.utils.websocket import cleanup_websocket_connection
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -95,57 +96,12 @@ async def get_session(
              )
 async def send_message(
     payload: message_schemas.SendMessageRequest,
-    session_manager: Annotated[SessionManager, Depends(get_session_manager)],
-    connection_manager: Annotated[WebsocketsManager, Depends(get_connection_manager)],
     ai_processing_service: Annotated[AIProcessingService, Depends(get_ai_processing_service)],
 ):
     """Send a message to a session"""
-    logger.info(f"Received message for session {payload.session_id}: {payload.message}")
-
-    session = await session_manager.get_session(payload.session_id)
-    if session is None:
-        logger.warning(f"Session {payload.session_id} not found")
-        return error_schemas.ErrorResponse(error="Session not found")
-
-    # Check if session is connected
-    if not await connection_manager.is_session_active(payload.session_id):
-        logger.warning(f"Session {payload.session_id} not connected")
-        return error_schemas.ErrorResponse(error="Session not connected")
-
-    try:
-        logger.debug("Adding user message to database...")
-        saved_message = await session_manager.add_user_message(
-            session_id=payload.session_id,
-            message=payload.message
-        )
-        logger.debug(f"User message saved successfully: {saved_message.id}")
-
-        db_messages = await session_manager.get_session_messages(payload.session_id)
-        anthropic_messages = [
-            convert_to_anthropic_message(msg) for msg in db_messages]
-
-        logger.debug("Starting background task to process message...")
-        logger.info(f"anthropic messages: {anthropic_messages}")
-        asyncio.create_task(
-            ai_processing_service.process_message_and_save(
-                payload.session_id,
-                anthropic_messages,
-                model=payload.model,
-                api_provider=payload.api_provider,
-                api_key=payload.api_key,
-                system_prompt_suffix=payload.system_prompt_suffix,
-                tool_version=payload.tool_version,
-                max_tokens=payload.max_tokens,
-                thinking_budget=payload.thinking_budget,
-                max_retries=payload.max_retries,
-            ))
-
-        return message_schemas.SendMessageResponse(status="processing")
-
-    except Exception as e:
-        logger.error(f"Failed to process message: {str(e)}")
-        return error_schemas.ErrorResponse(
-            error=f"Failed to process message: {str(e)}")
+    return await ai_processing_service.process_request(
+        payload
+    )
 
 
 @router.websocket("/sessions/{session_id}/ws")
@@ -161,15 +117,6 @@ async def websocket_endpoint(
     await session_manager.update_session_status(session_id, SessionStatus.ACTIVE)
     await connection_manager.add_connection(session_id, websocket)
 
-    async def cleanup():
-        """Cleanup function to remove connection and update session status"""
-        logger.debug(f"Cleaning up session {session_id}")
-        try:
-            await connection_manager.remove_connection(session_id)
-            await session_manager.update_session_status(session_id, SessionStatus.INACTIVE)
-        except Exception as e:
-            logger.error(f"Error cleaning up session {session_id}: {e}")
-
     try:
         # Send connection confirmation
         await connection_manager.send_to_session(
@@ -183,7 +130,7 @@ async def websocket_endpoint(
             await websocket.receive_text()
 
     except WebSocketDisconnect:
-        await cleanup()
+        await cleanup_websocket_connection(session_id, session_manager, connection_manager)
     except Exception as e:
         logger.error(f"WebSocket error for session {session_id}: {e}")
-        await cleanup()
+        await cleanup_websocket_connection(session_id, session_manager, connection_manager)

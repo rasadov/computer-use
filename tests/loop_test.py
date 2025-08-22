@@ -37,6 +37,7 @@ async def test_loop():
         messages: list[BetaMessageParam] = [
             {"role": "user", "content": "Test message"}]
         result = await sampling_loop(
+            websocket=mock.Mock(),
             model="test-model",
             provider=APIProvider.ANTHROPIC,
             system_prompt_suffix="",

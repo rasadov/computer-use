@@ -8,6 +8,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, cast
 
+from fastapi.websockets import WebSocket
 import httpx
 from anthropic import (
     Anthropic,
@@ -69,14 +70,15 @@ SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 
 async def sampling_loop(
     *,
+    websocket: WebSocket,
     model: str,
     provider: APIProvider,
     system_prompt_suffix: str,
     messages: list[BetaMessageParam],
-    output_callback: Callable[[BetaContentBlockParam], None],
-    tool_output_callback: Callable[[ToolResult, str], None],
+    output_callback: Callable[[WebSocket, BetaContentBlockParam], None],
+    tool_output_callback: Callable[[WebSocket, ToolResult, str], None],
     api_response_callback: Callable[
-        [httpx.Request, httpx.Response | object | None, Exception | None], None
+        [WebSocket, httpx.Request, httpx.Response | object | None, Exception | None], None
     ],
     api_key: str,
     only_n_most_recent_images: int | None = None,
@@ -149,13 +151,14 @@ async def sampling_loop(
                 extra_body=extra_body,
             )
         except (APIStatusError, APIResponseValidationError) as e:
-            api_response_callback(e.request, e.response, e)
+            api_response_callback(websocket, e.request, e.response, e)
             return messages
         except APIError as e:
-            api_response_callback(e.request, e.body, e)
+            api_response_callback(websocket, e.request, e.body, e)
             return messages
 
         api_response_callback(
+            websocket,
             raw_response.http_response.request,
             raw_response.http_response,
             None)
@@ -172,7 +175,7 @@ async def sampling_loop(
 
         tool_result_content: list[BetaToolResultBlockParam] = []
         for content_block in response_params:
-            output_callback(content_block)
+            output_callback(websocket, content_block)
             if content_block["type"] == "tool_use":
                 result = await tool_collection.run(
                     name=content_block["name"],
@@ -181,7 +184,7 @@ async def sampling_loop(
                 tool_result_content.append(
                     _make_api_tool_result(result, content_block["id"])
                 )
-                tool_output_callback(result, content_block["id"])
+                tool_output_callback(websocket, result, content_block["id"])
 
         if not tool_result_content:
             return messages

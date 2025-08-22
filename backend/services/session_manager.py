@@ -2,7 +2,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 import orjson
 
@@ -38,7 +38,7 @@ class SessionManager(BaseSessionManager):
         await self.session_repository.create(session)
         return session_id
 
-    async def get_session(self, session_id: str) -> Optional[Session]:
+    async def get_session(self, session_id: str) -> Session | None:
         return await self.session_repository.get_by_id(session_id)
 
     async def get_session_messages(

@@ -2,7 +2,6 @@ import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 import orjson
 import redis.asyncio as redis
@@ -22,7 +21,7 @@ class WebsocketsManager:
     and tracking active sessions.
     """
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    redis_client: Optional[redis.Redis] = None
+    redis_client: redis.Redis | None = None
     local_connections: dict[str, WebSocket] = field(default_factory=dict)
 
     async def ping(self):
@@ -74,7 +73,7 @@ class WebsocketsManager:
 
         logger.info(f"Removed connection for session {session_id}")
 
-    async def get_connection(self, session_id: str) -> Optional[WebSocket]:
+    async def get_connection(self, session_id: str) -> WebSocket | None:
         """Get WebSocket connection for a session"""
         return self.local_connections.get(session_id)
 

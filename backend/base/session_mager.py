@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import Sequence
 
 from backend.models.enums import Sender
 from backend.models.message import Message
@@ -22,7 +22,7 @@ class BaseSessionManager(ABC):
         """Create a new session"""
 
     @abstractmethod
-    async def get_session(self, session_id: str) -> Optional[Session]:
+    async def get_session(self, session_id: str) -> Session | None:
         """Get a session by id"""
 
     @abstractmethod

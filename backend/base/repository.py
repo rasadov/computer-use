@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Coroutine, Generic, Optional, TypeVar
+from typing import Coroutine, Generic, TypeVar
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,5 +31,5 @@ class BaseRepository(ABC, Generic[T]):
         """Delete a model"""
 
     @abstractmethod
-    def get_by_id(self, item_id: str) -> Optional[T] | Coroutine:
+    def get_by_id(self, item_id: str) -> T | Coroutine | None:
         """Get a model by id"""

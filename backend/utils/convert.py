@@ -1,11 +1,11 @@
 import orjson
 from anthropic.types.beta import BetaMessageParam, BetaTextBlockParam
 
-from backend.models.message import ChatMessage
+from backend.models.message import Message
 
 
 def convert_to_anthropic_message(
-        db_message: ChatMessage) -> BetaMessageParam | dict:
+        db_message: Message) -> BetaMessageParam | dict:
     """Convert database message to Anthropic API format"""
     if isinstance(db_message.content, str):
         try:

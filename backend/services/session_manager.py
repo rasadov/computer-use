@@ -9,8 +9,8 @@ import orjson
 from backend.base.decorators import singleton
 from backend.base.session_mager import BaseSessionManager
 from backend.models.enums import Sender, SessionStatus
-from backend.models.message import ChatMessage
-from backend.models.session import SessionDB
+from backend.models.message import Message
+from backend.models.session import Session
 from backend.repositories.message_repository import MessageRepository
 from backend.repositories.session_repository import SessionRepository
 
@@ -28,7 +28,7 @@ class SessionManager(BaseSessionManager):
 
     async def create_session(self) -> str:
         session_id = str(uuid.uuid4())
-        session = SessionDB(
+        session = Session(
             id=session_id,
             messages=[],
             status=SessionStatus.ACTIVE,
@@ -38,11 +38,11 @@ class SessionManager(BaseSessionManager):
         await self.session_repository.create(session)
         return session_id
 
-    async def get_session(self, session_id: str) -> Optional[SessionDB]:
+    async def get_session(self, session_id: str) -> Optional[Session]:
         return await self.session_repository.get_by_id(session_id)
 
     async def get_session_messages(
-            self, session_id: str) -> Sequence[ChatMessage]:
+            self, session_id: str) -> Sequence[Message]:
         """Get all messages for a session"""
         return await self.message_repository.get_by_session_id(session_id)
 
@@ -50,7 +50,7 @@ class SessionManager(BaseSessionManager):
         self,
         session_id: str,
         message: str,
-    ) -> ChatMessage:
+    ) -> Message:
         message_content = orjson.dumps([
             {
                 'type': 'text',
@@ -68,9 +68,9 @@ class SessionManager(BaseSessionManager):
             self,
             session_id: str,
             role: Sender,
-            content: str) -> ChatMessage:
+            content: str) -> Message:
         """Add a single message to the session"""
-        message = ChatMessage(
+        message = Message(
             id=str(uuid.uuid4()),
             session_id=session_id,
             role=role,
@@ -82,7 +82,7 @@ class SessionManager(BaseSessionManager):
     async def add_messages_batch(
             self,
             session_id: str,
-            raw_messages: Sequence[Any]) -> Sequence[ChatMessage]:
+            raw_messages: Sequence[Any]) -> Sequence[Message]:
         """Add multiple messages to the session in a single transaction
 
         Args:
@@ -129,7 +129,7 @@ class SessionManager(BaseSessionManager):
             else:
                 content_json = str(content_data)
 
-            message = ChatMessage(
+            message = Message(
                 id=str(uuid.uuid4()),
                 session_id=session_id,
                 role=role.strip(),
@@ -143,5 +143,5 @@ class SessionManager(BaseSessionManager):
     async def update_session_status(self, session_id: str, status: SessionStatus):
         await self.session_repository.update(session_id, {"status": status.value})
 
-    async def list_sessions(self) -> Sequence[SessionDB]:
+    async def list_sessions(self) -> Sequence[Session]:
         return await self.session_repository.get_all()

@@ -1,6 +1,6 @@
 import asyncio
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 
 import orjson
 from anthropic.types.beta import BetaContentBlockParam
@@ -8,14 +8,13 @@ from fastapi import WebSocket
 from httpx import Request, Response
 
 from backend.base.decorators import singleton
-from backend.models.enums import LLMModel, Sender, TaskStatus, ToolVersion
-from backend.schemas import message as message_schemas
-from backend.schemas import error as error_schemas
+from backend.models.enums import Sender, TaskStatus
+from backend.schemas import error as error_schemas, message as message_schemas
 from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
-from backend.utils.websocket import send_websocket_message
 from backend.utils.convert import convert_to_anthropic_message
-from computer_use_demo.loop import APIProvider, sampling_loop
+from backend.utils.websocket import send_websocket_message
+from computer_use_demo.loop import sampling_loop
 from computer_use_demo.tools.base import ToolResult
 
 logger = logging.getLogger(__name__)

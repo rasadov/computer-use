@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Annotated
 
@@ -6,7 +5,6 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from backend.core.dependencies import (
     get_ai_processing_service,
-    get_connection_manager,
     get_connection_manager_websocket,
     get_session_manager,
     get_session_manager_websocket,
@@ -20,7 +18,6 @@ from backend.schemas import (
 from backend.services.ai_processing_service import AIProcessingService
 from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
-from backend.utils.convert import convert_to_anthropic_message
 from backend.utils.websocket import cleanup_websocket_connection
 
 logger = logging.getLogger(__name__)

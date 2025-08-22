@@ -8,7 +8,6 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, cast
 
-from fastapi.websockets import WebSocket
 import httpx
 from anthropic import (
     Anthropic,
@@ -29,6 +28,7 @@ from anthropic.types.beta import (
     BetaToolResultBlockParam,
     BetaToolUseBlockParam,
 )
+from fastapi.websockets import WebSocket
 
 from .tools import (
     TOOL_GROUPS_BY_VERSION,

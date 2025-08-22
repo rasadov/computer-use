@@ -5,13 +5,13 @@ from sqlalchemy import select
 
 from backend.base.decorators import singleton
 from backend.base.repository import BaseRepository
-from backend.models.message import ChatMessage
+from backend.models.message import Message
 
 logger = logging.getLogger(__name__)
 
 
 @singleton
-class MessageRepository(BaseRepository[ChatMessage]):
+class MessageRepository(BaseRepository[Message]):
     """
     MessageRepository - implements method to get, add, update or delete messages from database
 
@@ -19,30 +19,30 @@ class MessageRepository(BaseRepository[ChatMessage]):
         session (AsyncSession): Async session for database operations
     """
 
-    async def get_by_id(self, item_id: str) -> Optional[ChatMessage]:
+    async def get_by_id(self, item_id: str) -> Optional[Message]:
         """Get a message by id
         Args:
             item_id (str): Message id
         Returns:
             Optional[ChatMessage]: Message object or None if not found
         """
-        result = await self.session.execute(select(ChatMessage).where(ChatMessage.id == item_id))
+        result = await self.session.execute(select(Message).where(Message.id == item_id))
         logger.debug(
             f"Retrieved message from DB: {item_id}")
         return result.scalar_one_or_none()
 
-    async def get_all(self) -> Sequence[ChatMessage]:
+    async def get_all(self) -> Sequence[Message]:
         """Get all messages
         Returns:
             Sequence[ChatMessage]: List of all messages
         """
-        result = await self.session.execute(select(ChatMessage))
+        result = await self.session.execute(select(Message))
         logger.debug(
             "Retrieved all messages from DB")
         return result.scalars().all()
 
     async def get_by_session_id(
-            self, session_id: str) -> Sequence[ChatMessage]:
+            self, session_id: str) -> Sequence[Message]:
         """Get all messages for a specific session, ordered by timestamp
         Args:
             session_id (str): Session id
@@ -50,15 +50,15 @@ class MessageRepository(BaseRepository[ChatMessage]):
             Sequence[ChatMessage]: List of messages for the session
         """
         result = await self.session.execute(
-            select(ChatMessage)
-            .where(ChatMessage.session_id == session_id)
-            .order_by(ChatMessage.timestamp)
+            select(Message)
+            .where(Message.session_id == session_id)
+            .order_by(Message.timestamp)
         )
         logger.debug(
             f"Retrieved all messages for session {session_id}")
         return result.scalars().all()
 
-    async def create(self, model: ChatMessage) -> ChatMessage:
+    async def create(self, model: Message) -> Message:
         """Create a new message
         Args:
             model (ChatMessage): Message object to create
@@ -77,7 +77,7 @@ class MessageRepository(BaseRepository[ChatMessage]):
             await self.session.rollback()
             raise
 
-    async def update(self, item_id: str, fields: dict) -> ChatMessage:
+    async def update(self, item_id: str, fields: dict) -> Message:
         """Update a message
         Args:
             item_id (str): Message id
@@ -111,7 +111,7 @@ class MessageRepository(BaseRepository[ChatMessage]):
             f"Deleted message in DB: {item_id}")
         return True
 
-    async def create_batch(self, messages: Sequence[ChatMessage]) -> Sequence[ChatMessage]:
+    async def create_batch(self, messages: Sequence[Message]) -> Sequence[Message]:
         """Create multiple messages in a single transaction
         Args:
             messages (Sequence[ChatMessage]): List of message objects to create

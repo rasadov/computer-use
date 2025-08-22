@@ -9,10 +9,10 @@ from backend.base.models import CustomBase
 if TYPE_CHECKING:
     # Import ChatMessage for type checking
     # If statement is needed to avoid circular import
-    from backend.models.message import ChatMessage
+    from backend.models.message import Message
 
 
-class SessionDB(CustomBase):
+class Session(CustomBase):
     """
     Session model
 
@@ -23,7 +23,7 @@ class SessionDB(CustomBase):
         session_metadata: dict
 
     Relationships:
-        messages: list[ChatMessage]
+        messages: list[Message]
     """
     __tablename__ = "sessions"
 
@@ -35,5 +35,5 @@ class SessionDB(CustomBase):
     session_metadata: Mapped[dict] = mapped_column(
         "metadata", JSON, default={})
 
-    messages: Mapped[list["ChatMessage"]] = relationship(
-        "ChatMessage", back_populates="session")
+    messages: Mapped[list["Message"]] = relationship(
+        "Message", back_populates="session")

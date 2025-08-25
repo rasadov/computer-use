@@ -46,7 +46,8 @@ class TestLogger(TestCase):
 
     def test_my_json_formatter_basic(self):
         """Test MyJSONFormatter with a basic log record."""
-        formatter = MyJSONFormatter(fmt_keys={"level": "levelname", "logger": "name"})
+        formatter = MyJSONFormatter(
+            fmt_keys={"level": "levelname", "logger": "name"})
         logger = logging.getLogger("test")
         logger.setLevel(logging.INFO)
         record = logging.LogRecord(
@@ -69,7 +70,8 @@ class TestLogger(TestCase):
 
     def test_my_json_formatter_with_custom_attrs(self):
         """Test MyJSONFormatter with custom attributes."""
-        formatter = MyJSONFormatter(fmt_keys={"level": "levelname", "logger": "name"})
+        formatter = MyJSONFormatter(
+            fmt_keys={"level": "levelname", "logger": "name"})
         logger = logging.getLogger("test")
         logger.setLevel(logging.INFO)
         record = logging.LogRecord(
@@ -88,7 +90,8 @@ class TestLogger(TestCase):
 
     def test_my_json_formatter_with_exception(self):
         """Test MyJSONFormatter with exception info."""
-        formatter = MyJSONFormatter(fmt_keys={"level": "levelname", "logger": "name"})
+        formatter = MyJSONFormatter(
+            fmt_keys={"level": "levelname", "logger": "name"})
         logger = logging.getLogger("test")
         logger.setLevel(logging.ERROR)
         try:
@@ -144,7 +147,8 @@ class TestLogger(TestCase):
 
     def test_build_file_handler(self):
         """Test _build_file_handler configuration."""
-        handler = _build_file_handler(self.log_file, logging.INFO, max_bytes=1024, backup_count=5)
+        handler = _build_file_handler(
+            self.log_file, logging.INFO, max_bytes=1024, backup_count=5)
         self.assertIsInstance(handler, logging.FileHandler)
         self.assertEqual(handler.level, logging.INFO)
         self.assertIsInstance(handler.formatter, MyJSONFormatter)
@@ -193,7 +197,9 @@ class TestLogger(TestCase):
             logger.info(f"Test message {i}")
         duration = time.time() - start_time
 
-        self.assertLess(duration, 2.0, f"Logging {n_logs} messages took too long: {duration:.2f} seconds")
+        self.assertLess(
+            duration, 2.0, f"Logging {n_logs} messages took too long: {duration:.2f} seconds")
+
 
 if __name__ == "__main__":
     main()

@@ -11,9 +11,11 @@ from backend.services.connection_manager import WebsocketsManager
 async def websocket():
     return mock.Mock(spec=WebSocket)
 
+
 @pytest.fixture
 async def session_id():
     return "test_session_id"
+
 
 async def test_add_connection(websockets_manager: WebsocketsManager, websocket: WebSocket, session_id: str):
     """Test adding a WebSocket connection
@@ -23,7 +25,7 @@ async def test_add_connection(websockets_manager: WebsocketsManager, websocket: 
 
     assert websockets_manager.local_connections[session_id] == websocket
 
-    websockets_manager.redis_client.hset.assert_called_once() # type: ignore
+    websockets_manager.redis_client.hset.assert_called_once()  # type: ignore
 
 
 async def test_get_connection(websockets_manager: WebsocketsManager, websocket: WebSocket, session_id: str):
@@ -84,7 +86,9 @@ async def test_remove_connection(websockets_manager: WebsocketsManager, websocke
 
     assert session_id not in websockets_manager.local_connections
 
-    websockets_manager.redis_client.hdel.assert_called_with("active_sessions", session_id) # type: ignore
+    websockets_manager.redis_client.hdel.assert_called_with(
+        "active_sessions", session_id)  # type: ignore
+
 
 async def test_remove_not_existing_connection(websockets_manager: WebsocketsManager):
     """Test removing a non-existing WebSocket connection"""

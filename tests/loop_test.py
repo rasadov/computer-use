@@ -60,7 +60,8 @@ async def test_loop():
             name="computer", tool_input={"action": "test"}
         )
         output_callback.assert_called_with(
-            mock.ANY, BetaTextBlockParam(text="Done!", type="text", citations=None)
+            mock.ANY, BetaTextBlockParam(
+                text="Done!", type="text", citations=None)
         )
         assert output_callback.call_count == 3
         assert tool_output_callback.call_count == 1

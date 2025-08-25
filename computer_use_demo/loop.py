@@ -78,7 +78,8 @@ async def sampling_loop(
     output_callback: Callable[[WebSocket, BetaContentBlockParam], None],
     tool_output_callback: Callable[[WebSocket, ToolResult, str], None],
     api_response_callback: Callable[
-        [WebSocket, httpx.Request, httpx.Response | object | None, Exception | None], None
+        [WebSocket, httpx.Request, httpx.Response |
+            object | None, Exception | None], None
     ],
     api_key: str,
     only_n_most_recent_images: int | None = None,

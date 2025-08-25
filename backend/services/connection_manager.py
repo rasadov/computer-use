@@ -28,7 +28,7 @@ class WebsocketsManager:
         """Ping Redis connection"""
         if not self.redis_client:
             await self.connect()
-        return await self.redis_client.ping() # type: ignore
+        return await self.redis_client.ping()  # type: ignore
 
     async def connect(self):
         """Initialize Redis connection"""
@@ -49,7 +49,7 @@ class WebsocketsManager:
         self.local_connections[session_id] = websocket
 
         # Store session info in Redis for distributed tracking
-        await self.redis_client.hset( # type: ignore
+        await self.redis_client.hset(  # type: ignore
             "active_sessions",
             session_id,
             orjson.dumps({
@@ -69,7 +69,8 @@ class WebsocketsManager:
             del self.local_connections[session_id]
 
         # Remove from Redis
-        await self.redis_client.hdel("active_sessions", session_id) # type: ignore
+        # type: ignore
+        await self.redis_client.hdel("active_sessions", session_id)
 
         logger.info(f"Removed connection for session {session_id}")
 
@@ -80,7 +81,8 @@ class WebsocketsManager:
     async def is_session_active(self, session_id: str) -> bool:
         """Check if session is active across all instances"""
         await self.connect()
-        return await self.redis_client.hexists("active_sessions", session_id) # type: ignore
+        # type: ignore
+        return await self.redis_client.hexists("active_sessions", session_id)
 
     async def send_to_session(
             self,

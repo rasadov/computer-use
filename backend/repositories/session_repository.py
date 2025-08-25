@@ -38,7 +38,8 @@ class SessionRepository(BaseRepository[Session]):
 
     async def get_with_messages(self, item_id: str) -> Session | None:
         result = await self.session.execute(
-            select(Session).options(selectinload(Session.messages)).where(Session.id == item_id)
+            select(Session).options(selectinload(
+                Session.messages)).where(Session.id == item_id)
         )
         logger.debug(
             f"Retrieved session with messages from DB: {item_id}")

@@ -60,7 +60,8 @@ class StandardTextFormatter(logging.Formatter):
 
         # Add timestamp if requested
         if self.include_timestamp:
-            timestamp = dt.datetime.fromtimestamp(record.created, tz=dt.timezone.utc)
+            timestamp = dt.datetime.fromtimestamp(
+                record.created, tz=dt.timezone.utc)
             parts.append(timestamp.strftime("%Y-%m-%d %H:%M:%S UTC"))
 
         # Add level name with color/formatting
@@ -109,13 +110,16 @@ def _ensure_logs_dir(path: str) -> None:
     except OSError as e:
         logging.getLogger().warning(f"Failed to create log directory: {e}")
 
+
 def _build_console_handler(level: int) -> logging.StreamHandler:
     """Build console handler with standard text formatting."""
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(level)
     # Use standard text formatter for console output
-    handler.setFormatter(StandardTextFormatter(include_timestamp=True, include_logger=True))
+    handler.setFormatter(StandardTextFormatter(
+        include_timestamp=True, include_logger=True))
     return handler
+
 
 def _build_file_handler(path: str, level: int, max_bytes: int, backup_count: int) -> logging.Handler:
     """Build file handler with JSON formatting (good for log processing)."""
@@ -123,21 +127,25 @@ def _build_file_handler(path: str, level: int, max_bytes: int, backup_count: int
     # Use ConcurrentRotatingFileHandler for thread-safe async writes
     # backupCount = number of old log files to keep (e.g., app.log.1, app.log.2, etc.)
     # maxBytes = maximum size of log file in bytes
-    fh = ConcurrentRotatingFileHandler(path, maxBytes=max_bytes, backupCount=backup_count)
+    fh = ConcurrentRotatingFileHandler(
+        path, maxBytes=max_bytes, backupCount=backup_count)
     fh.setLevel(level)
     # Keep JSON format for file logging (useful for log analysis tools)
-    fh.setFormatter(MyJSONFormatter(fmt_keys={"level": "levelname", "logger": "name"}))
+    fh.setFormatter(MyJSONFormatter(
+        fmt_keys={"level": "levelname", "logger": "name"}))
     return fh
+
 
 def setup_logging(
     *,
     level: int | None = None,
     log_path: str = "logs/app.log",
     max_log_files: int = 5,
-    max_log_size: int = 10_000_000) -> None:
+        max_log_size: int = 10_000_000) -> None:
 
     if level is None:
-        debug_env = os.getenv("DEBUG", "false").lower() in {"1", "true", "yes", "on"}
+        debug_env = os.getenv("DEBUG", "false").lower() in {
+            "1", "true", "yes", "on"}
         level = logging.DEBUG if debug_env else logging.INFO
 
     root = logging.getLogger()
@@ -149,7 +157,8 @@ def setup_logging(
 
     if log_path:
         try:
-            root.addHandler(_build_file_handler(log_path, level, max_log_size, max_log_files))
+            root.addHandler(_build_file_handler(
+                log_path, level, max_log_size, max_log_files))
         except OSError as e:
             logging.getLogger().warning(f"Failed to setup file handler: {e}")
 

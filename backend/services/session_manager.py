@@ -112,7 +112,8 @@ class SessionManager(BaseSessionManager):
                 return []
 
             # Extract and validate role
-            role = Sender.BOT if msg.get("role") == "assistant" else Sender.TOOL
+            role = Sender.BOT if msg.get(
+                "role") == "assistant" else Sender.TOOL
             if not isinstance(role, str) or not role.strip():
                 logger.error(f"Message {i} has invalid role: {role}")
                 return []

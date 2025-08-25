@@ -7,7 +7,7 @@ from anthropic.types.beta import BetaContentBlockParam
 from fastapi import WebSocket
 from httpx import Request, Response
 
-from backend.base.decorators import singleton
+from backend.base.decorators import retry_on_exception, singleton
 from backend.models.enums import Sender, TaskStatus
 from backend.schemas import error as error_schemas, message as message_schemas
 from backend.services.connection_manager import WebsocketsManager
@@ -31,7 +31,8 @@ class AIProcessingService:
         self,
         payload: message_schemas.SendMessageRequest,
     ):
-        logger.info(f"Received message for session {payload.session_id}: {payload.message}")
+        logger.info(
+            f"Received message for session {payload.session_id}: {payload.message}")
 
         session = await self.session_manager.get_session(payload.session_id)
         if session is None:
@@ -42,7 +43,6 @@ class AIProcessingService:
         if not await self.connection_manager.is_session_active(payload.session_id):
             logger.warning(f"Session {payload.session_id} not connected")
             return error_schemas.ErrorResponse(error="Session not connected")
-
 
         try:
             logger.info("Adding user message to database...")
@@ -70,15 +70,16 @@ class AIProcessingService:
             return error_schemas.ErrorResponse(
                 error=f"Failed to process message: {str(e)}")
 
-
     async def _get_websocket_connection(self, session_id: str) -> WebSocket:
         """Get WebSocket connection for a session"""
         websocket = await self.connection_manager.get_connection(session_id)
         if not websocket:
             logger.warning(f"No websocket connection for session {session_id}")
-            raise Exception(f"No websocket connection for session {session_id}")
+            raise Exception(
+                f"No websocket connection for session {session_id}")
         return websocket
 
+    @retry_on_exception(max_retries=3, delay=1)
     async def send_messages_to_llm(
         self,
         websocket: WebSocket,
@@ -138,28 +139,11 @@ class AIProcessingService:
                         f"tool_version={payload.tool_version}, max_tokens={payload.max_tokens},"
                         f"thinking_budget={payload.thinking_budget}")
 
-            # Try up to max_retries times
-            for i in range(payload.max_retries):
-                try:
-                    # This is the pure AI processing - no database operations
-                    updated_messages = await self.send_messages_to_llm(
-                        websocket,
-                        messages=anthropic_messages,
-                        payload=payload
-                    )
-                    break
-                except Exception as e:
-                    logger.error(f"Try {i+1} - Sampling loop failed: {str(e)}")
-            else:
-                # If we get here, it means we've tried max_retries times and failed
-                logger.error("Sampling loop failed after multiple retries")
-                await send_websocket_message(
-                    websocket,
-                    TaskStatus.ERROR,
-                    "error",
-                    "Failed to process message"
-                )
-                return
+            updated_messages = await self.send_messages_to_llm(
+                websocket,
+                messages=anthropic_messages,
+                payload=payload
+            )
 
             await send_websocket_message(
                 websocket,
@@ -183,7 +167,7 @@ class AIProcessingService:
                 return
 
             logger.info(f"AI processing complete. Generated {len(new_messages)}"
-                    " new messages. Now saving to database...")
+                        " new messages. Now saving to database...")
 
             # Save the results using batch operation for better performance
             try:
@@ -195,7 +179,8 @@ class AIProcessingService:
                     raw_messages=new_messages
                 )
 
-                logger.info(f"Successfully saved {len(saved_messages)} messages in batch")
+                logger.info(
+                    f"Successfully saved {len(saved_messages)} messages in batch")
                 saved_count = len(saved_messages)
 
             except Exception as e:
@@ -206,19 +191,23 @@ class AIProcessingService:
                 for i, msg in enumerate(new_messages):
                     try:
                         content_data = msg.get("content", {})
-                        content_json = orjson.dumps(content_data).decode("utf-8")
+                        content_json = orjson.dumps(
+                            content_data).decode("utf-8")
 
                         await self.session_manager.add_message(
                             session_id=payload.session_id,
-                            role=Sender.BOT if msg.get("role") == "assistant" else Sender.TOOL,
+                            role=Sender.BOT if msg.get(
+                                "role") == "assistant" else Sender.TOOL,
                             content=content_json
                         )
                         saved_count += 1
                     except Exception as fallback_error:
-                        logger.error(f"Error saving individual message {i}: {fallback_error}")
+                        logger.error(
+                            f"Error saving individual message {i}: {fallback_error}")
                         continue
 
-                logger.info(f"Fallback save complete. Saved {saved_count}/{len(new_messages)} messages.")
+                logger.info(
+                    f"Fallback save complete. Saved {saved_count}/{len(new_messages)} messages.")
 
             # Send completion signal
             await send_websocket_message(

@@ -63,7 +63,8 @@ class TestSendWebsocketMessage:
         await send_websocket_message(mock_websocket, "error", "notification", "test")
 
         # Assert
-        mock_logger.error.assert_called_once_with("Error sending websocket message: Connection closed")
+        mock_logger.error.assert_called_once_with(
+            "Error sending websocket message: Connection closed")
 
     @pytest.mark.asyncio
     async def test_various_content_types(self, mock_websocket):
@@ -166,7 +167,8 @@ class TestSendWebsocketMessage:
             pass
 
         with patch('orjson.dumps') as mock_dumps:
-            mock_dumps.side_effect = TypeError("Object of type function is not JSON serializable")
+            mock_dumps.side_effect = TypeError(
+                "Object of type function is not JSON serializable")
 
             await send_websocket_message(mock_websocket, "error", "data", unserializable_func)
 

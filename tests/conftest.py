@@ -17,6 +17,7 @@ def mock_screen_dimensions():
     ):
         yield
 
+
 @pytest.fixture
 async def message_repository():
     async_session = mock.AsyncMock()
@@ -40,6 +41,7 @@ async def message_repository():
 
     return MessageRepository(async_session)
 
+
 @pytest.fixture
 async def sessions_repository():
     async_session = mock.AsyncMock()
@@ -62,6 +64,7 @@ async def sessions_repository():
     async_session.delete.return_value = None
 
     return SessionRepository(async_session)
+
 
 @pytest.fixture
 async def websockets_manager():
@@ -93,6 +96,7 @@ async def websockets_manager():
 
     yield manager
 
+
 @pytest.fixture
 async def session_manager(
     sessions_repository: SessionRepository,
@@ -103,6 +107,7 @@ async def session_manager(
         message_repository
     )
     yield manager
+
 
 @pytest.fixture
 async def ai_processing_service(

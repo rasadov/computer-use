@@ -22,6 +22,8 @@ async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 # WebSocket-compatible dependency functions
+
+
 async def get_db_websocket(websocket: WebSocket) -> AsyncGenerator[AsyncSession, None]:
     async_session: async_sessionmaker[AsyncSession] = websocket.app.state.async_session
     async with async_session() as session:

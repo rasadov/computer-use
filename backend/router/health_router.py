@@ -16,16 +16,16 @@ router = APIRouter(
 
 
 @router.get("/health",
-    response_model=health_schemas.HealthResponse,
-)
+            response_model=health_schemas.HealthResponse,
+            )
 async def get_health():
     logger.debug("Health check")
     return health_schemas.HealthResponse(status="healthy")
 
 
 @router.get("/health/db",
-    response_model=health_schemas.DatabaseHealthResponse,
-)
+            response_model=health_schemas.DatabaseHealthResponse,
+            )
 async def get_db_health(
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
@@ -44,10 +44,11 @@ async def get_db_health(
 
 
 @router.get("/health/redis",
-    response_model=health_schemas.RedisHealthResponse,
-)
+            response_model=health_schemas.RedisHealthResponse,
+            )
 async def get_redis_health(
-    connection_manager: Annotated[WebsocketsManager, Depends(get_connection_manager)]
+    connection_manager: Annotated[WebsocketsManager,
+                                  Depends(get_connection_manager)]
 ):
     """Check Redis health"""
     try:

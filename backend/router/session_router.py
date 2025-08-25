@@ -27,8 +27,8 @@ router = APIRouter(
 
 
 @router.post("/sessions",
-    response_model=session_schemas.CreateSessionResponse,
-)
+             response_model=session_schemas.CreateSessionResponse,
+             )
 async def create_session(
     session_manager: Annotated[SessionManager, Depends(get_session_manager)],
 ):
@@ -38,8 +38,8 @@ async def create_session(
 
 
 @router.get("/sessions",
-    response_model=session_schemas.ListSessionsResponse,
-)
+            response_model=session_schemas.ListSessionsResponse,
+            )
 async def list_sessions(
     session_manager: Annotated[SessionManager, Depends(get_session_manager)],
 ):
@@ -59,8 +59,8 @@ async def list_sessions(
 
 
 @router.get("/sessions/{session_id}",
-    response_model=session_schemas.GetSessionResponse,
-)
+            response_model=session_schemas.GetSessionResponse,
+            )
 async def get_session(
     session_id: str,
     session_manager: Annotated[SessionManager, Depends(get_session_manager)],
@@ -74,8 +74,8 @@ async def get_session(
 
 
 @router.post("/sessions/{session_id}/messages",
-    response_model=message_schemas.SendMessageResponse,
-)
+             response_model=message_schemas.SendMessageResponse,
+             )
 async def send_message(
     payload: message_schemas.SendMessageRequest,
     ai_processing_service: Annotated[AIProcessingService, Depends(get_ai_processing_service)],

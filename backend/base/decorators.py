@@ -21,11 +21,11 @@ def retry_on_exception(max_retries: int = 3, delay: int = 1):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            for i in range(max_retries):
+            for i in range(max_retries + 1):  # +1 to include initial attempt
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    if i == max_retries - 1:
+                    if i == max_retries:  # Last attempt
                         raise e
                     time.sleep(delay)
         return wrapper

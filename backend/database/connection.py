@@ -1,12 +1,10 @@
-import logging
-
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
+from loguru import logger
 
 from backend.core.config import settings
 
-logger = logging.getLogger(__name__)
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,

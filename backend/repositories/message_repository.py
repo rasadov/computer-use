@@ -6,8 +6,7 @@ from sqlalchemy import select
 from backend.base.decorators import singleton
 from backend.base.repository import BaseRepository
 from backend.models.message import Message
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 @singleton

@@ -1,7 +1,7 @@
-import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from loguru import logger
 
 from backend.core.dependencies import (
     get_ai_processing_service,
@@ -20,7 +20,7 @@ from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
 from backend.utils.websocket import cleanup_websocket_connection
 
-logger = logging.getLogger(__name__)
+
 router = APIRouter(
     tags=["Session"]
 )

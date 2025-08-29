@@ -1,11 +1,11 @@
 import asyncio
-import logging
 from dataclasses import dataclass
 
 import orjson
 from anthropic.types.beta import BetaContentBlockParam
 from fastapi import WebSocket
 from httpx import Request, Response
+from loguru import logger
 
 from backend.base.decorators import retry_on_exception, singleton
 from backend.models.enums import Sender, TaskStatus
@@ -16,8 +16,6 @@ from backend.utils.convert import convert_to_anthropic_message
 from backend.utils.websocket import send_websocket_message
 from computer_use_demo.loop import sampling_loop
 from computer_use_demo.tools.base import ToolResult
-
-logger = logging.getLogger(__name__)
 
 
 @singleton

@@ -1,15 +1,15 @@
-import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from loguru import logger
 
 from backend.core.dependencies import get_connection_manager, get_db
 from backend.schemas import health as health_schemas
 from backend.services.connection_manager import WebsocketsManager
 
-logger = logging.getLogger(__name__)
+
 router = APIRouter(
     tags=["Health"]
 )

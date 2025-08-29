@@ -1,4 +1,3 @@
-import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -6,10 +5,9 @@ from datetime import datetime
 import orjson
 import redis.asyncio as redis
 from fastapi import WebSocket
+from loguru import logger
 
 from backend.base.decorators import singleton
-
-logger = logging.getLogger(__name__)
 
 
 @singleton
@@ -69,8 +67,7 @@ class WebsocketsManager:
             del self.local_connections[session_id]
 
         # Remove from Redis
-        # type: ignore
-        await self.redis_client.hdel("active_sessions", session_id)
+        await self.redis_client.hdel("active_sessions", session_id) # type: ignore
 
         logger.info(f"Removed connection for session {session_id}")
 
@@ -81,8 +78,7 @@ class WebsocketsManager:
     async def is_session_active(self, session_id: str) -> bool:
         """Check if session is active across all instances"""
         await self.connect()
-        # type: ignore
-        return await self.redis_client.hexists("active_sessions", session_id)
+        return await self.redis_client.hexists("active_sessions", session_id) # type: ignore
 
     async def send_to_session(
             self,

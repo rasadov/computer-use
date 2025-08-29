@@ -1,14 +1,12 @@
-import logging
 from typing import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
+from loguru import logger
 
 from backend.base.decorators import singleton
 from backend.base.repository import BaseRepository
 from backend.models.session import Session
-
-logger = logging.getLogger(__name__)
 
 
 @singleton

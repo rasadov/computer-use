@@ -1,4 +1,3 @@
-from logging import getLogger
 from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends, Request, WebSocket
@@ -9,8 +8,6 @@ from backend.repositories.session_repository import SessionRepository
 from backend.services.ai_processing_service import AIProcessingService
 from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
-
-logger = getLogger(__name__)
 
 
 async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:

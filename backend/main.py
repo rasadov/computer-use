@@ -1,4 +1,3 @@
-import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -6,18 +5,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
+from loguru import logger
 
 from backend.core.config import settings
-from backend.core.logger import setup_logging
+from backend.core.logger import setup_logger
 from backend.database.connection import SessionLocal, engine
 from backend.router.health_router import router as health_router
 from backend.router.session_router import router as session_router
 from backend.services.connection_manager import connection_manager
 
-setup_logging(log_path="logs/app.log",
-              max_log_files=5, max_log_size=10_000_000)
 
-logger = logging.getLogger(__name__)
+setup_logger(log_dir=settings.LOG_DIR)
 
 
 @asynccontextmanager

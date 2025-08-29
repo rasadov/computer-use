@@ -1,10 +1,10 @@
-import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Sequence
 
 import orjson
+from loguru import logger
 
 from backend.base.decorators import singleton
 from backend.base.session_mager import BaseSessionManager
@@ -13,8 +13,6 @@ from backend.models.message import Message
 from backend.models.session import Session
 from backend.repositories.message_repository import MessageRepository
 from backend.repositories.session_repository import SessionRepository
-
-logger = logging.getLogger(__name__)
 
 
 @singleton

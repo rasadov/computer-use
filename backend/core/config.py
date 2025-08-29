@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = "development"
+    LOG_DIR: str = "logs"
 
     # Database settings
     POSTGRES_SERVER: str = "localhost"

@@ -1,13 +1,10 @@
-import logging
-
 import orjson
 from fastapi import WebSocket
+from loguru import logger
 
 from backend.models.enums import SessionStatus
 from backend.services.connection_manager import WebsocketsManager
 from backend.services.session_manager import SessionManager
-
-logger = logging.getLogger(__name__)
 
 
 async def send_websocket_message(
